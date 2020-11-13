@@ -1,0 +1,12 @@
+pytorch_lightning==1.0.5
+pytorch_toolbelt==0.4.0
+segmentation-models-pytorch==0.1.2
+albumentations==0.5.1
+opencv-python==4.4.0.46
+numpy==1.19.4
+torch==1.7.0
+PyYAML==5.3.1
+easydict==1.9
+yacs==0.1.8
+requests==2.25.0
+pre-commit

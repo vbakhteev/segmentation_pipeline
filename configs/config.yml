@@ -1,0 +1,96 @@
+defaults:
+  seed: 0
+
+########################################################
+################### Dataset settings ###################
+########################################################
+
+dataset:
+  name: brain_ct                        # Used to get NameDataset from data/name_dataset.py
+  root: '/home/vladbakhteev/data/brain'
+  steps_per_epoch: 1000
+
+  pre_transforms: []
+
+  augmentations:
+    - name: OneOf
+      list:
+        - name: GaussNoise
+        - name: Blur
+    - name: HorizontalFlip
+    - name: ShiftScaleRotate
+      shift_limit: 0.05
+      p: 1
+
+  post_transforms: [ { 'name': 'Resize', 'height': 512, 'width': 512 }, { 'name': 'ToTensor' } ]
+
+
+dataloader:
+  num_workers: 8
+  batch_size: 10
+  pin_memory: True
+
+########################################################
+#################### Model settings ####################
+########################################################
+
+model:
+  name: 'Unet'
+  dim: 2
+  pipeline: 'segmentation'      # [segmentation]
+  params: {'encoder_name': 'resnet34', 'in_channels': 1, 'classes': 1}
+
+criterion: [{
+  'cls': 'pytorch_toolbelt.losses.JointLoss',
+  'first_weight': 1.0,
+  'second_weight': 2.0,
+  'first': {'cls': 'pytorch_toolbelt.losses.DiceLoss'},
+  'second': {'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3}
+}]
+
+
+optimizer: [{
+  'cls': 'torch.optim.Adam',
+  'lr': 0.001
+}]
+
+# For some schedulers, you need to rewrite the place where it is called
+scheduler: [{
+  'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
+  'T_0': 2, 'T_mult': 2
+}]
+
+########################################################
+################## Training settings ###################
+########################################################
+
+checkpointing:
+  save_top_k: 1
+  save_last: False
+  mode: 'max'           # if 'max' then bigger metric is better.
+
+  metric:
+    name: 'intersection_over_union'
+    threshold: 0.5
+
+logging:
+  metrics: [
+    {'name': 'intersection_over_union', 'threshold': 0.5}
+  ]
+
+# You can add any argument for pytorch_lightning.Trainer
+lightning:
+  gpus: 1
+  num_nodes: 1
+
+# Parameters defined in stages are used to update fields defined above
+train_stages:
+  - stage1:
+      lightning:
+        max_epochs: 20
+
+  - stage2:
+      lightning:
+        max_epochs: 10
+
+      optimizer: ['lr': 0.0001]
