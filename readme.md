@@ -4,6 +4,7 @@
 git clone https://tfs.university.innopolis.ru/tfs/ai_lab/Medicine/_git/segmentation_pipeline
 cd segmentation_pipeline
 pip install -r requirements.txt
+pre-commit install
 ```
 
 
