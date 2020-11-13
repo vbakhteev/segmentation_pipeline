@@ -3,9 +3,16 @@ import segmentation_models_pytorch as smp
 from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
 from .metrics import BaseMetric, intersection_over_union
-from .segmentator import Segmentator
+from .metrics import intersection_over_union, BaseMetric
 
-available_pipelines = {"segmentation": Segmentator}
+__all__ = [
+    "get_model",
+    "get_optimizer",
+    "get_scheduler",
+    "get_metrics",
+    "get_metric",
+    "get_criterion",
+]
 
 available_metrics = {"intersection_over_union": intersection_over_union}
 
@@ -20,16 +27,6 @@ available_2d_models = {
 }
 
 available_3d_models = {}  # type: ignore
-
-__all__ = [
-    "get_model",
-    "get_pipeline",
-    "get_optimizer",
-    "get_scheduler",
-    "get_metrics",
-    "get_metric",
-    "get_criterion",
-]
 
 
 def get_model(cfg):
@@ -46,14 +43,6 @@ def get_model(cfg):
     model = model_cls(**cfg.model.params)
 
     return model
-
-
-def get_pipeline(cfg):
-    name = cfg.model.pipeline
-    if name not in available_pipelines:
-        raise KeyError(f"Pipeline {name} is not supported")
-
-    return available_pipelines[name]
 
 
 def get_optimizer(params, cfg_optimizer):

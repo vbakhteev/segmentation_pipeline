@@ -44,7 +44,7 @@ criterion: [{
   'cls': 'pytorch_toolbelt.losses.JointLoss',
   'first_weight': 1.0,
   'second_weight': 2.0,
-  'first': {'cls': 'pytorch_toolbelt.losses.DiceLoss'},
+  'first': {'cls': 'pytorch_toolbelt.losses.DiceLoss', 'mode': 'binary'},
   'second': {'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3}
 }]
 
@@ -85,12 +85,11 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - stage1:
-      lightning:
-        max_epochs: 20
+  - name: pretraining
+    lightning:
+      max_epochs: 20
 
-  - stage2:
-      lightning:
-        max_epochs: 10
-
-      optimizer: ['lr': 0.0001]
+  - name: fine-tuning
+    lightning:
+      max_epochs: 10
+    optimizer: ['lr': 0.0001]

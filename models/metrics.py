@@ -15,7 +15,7 @@ import torch
 EPS = 1e-8
 
 
-class BaseMetric(pl.Metric):
+class BaseMetric(pl.metrics.Metric):
     def __init__(self, metric_fn: Callable, dist_sync_on_step=False, threshold=0.5):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
 

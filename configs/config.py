@@ -30,7 +30,7 @@ def get_default():
     _C.model.params = {"encoder_name": "resnet34", "in_channels": 1, "classes": 1}
 
     # Criterion
-    _C.criterion = [{"cls": "pytorch_toolbelt.losses.DiceLoss"}]
+    _C.criterion = [{"cls": "pytorch_toolbelt.losses.DiceLoss", "mode": "binary"}]
 
     # Optimizer
     _C.optimizer = [{"cls": "torch.optim.Adam", "lr": 0.001}]
@@ -59,12 +59,11 @@ def get_default():
 
     # Parameters defined in training stages overwrite parameters defined above
     _C.train_stages = [
-        {"pretraining": {"lightning": {"max_epochs": 20}}},
+        {"name": "pretraining", "lightning": {"max_epochs": 20}},
         {
-            "fine_tuning": {
-                "lightning": {"max_epochs": 20},
-                "optimizer": [{"lr": 0.00001}],
-            }
+            "name": "fine-tuning",
+            "lightning": {"max_epochs": 20},
+            "optimizer": [{"lr": 0.00001}],
         },
     ]
     return _C

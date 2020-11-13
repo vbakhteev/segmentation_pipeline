@@ -40,8 +40,7 @@ class TelegramLogger:
         ping_url = (
             "https://api.telegram.org/bot"
             + str(self.access_token)
-            + "/sendPhoto?"
-            + "chat_id="
+            + "/sendPhoto?chat_id="
             + str(self.chat_id)
         )
         response = requests.post(ping_url, files=file_dict)
@@ -55,7 +54,7 @@ class TelegramLogger:
 
         access_token = input("Enter telegram access token: ")
         input("Send any message to telegram bot and press enter.")
-        chat_id = self.get_chat_id()
+        chat_id = self.get_chat_id(access_token)
 
         if not self.valid(access_token, chat_id):
             print("Try again.")
@@ -69,20 +68,18 @@ class TelegramLogger:
         # TODO implement rules for validation
         return True
 
-    def get_chat_id(self) -> int:
-        ping_url = (
-            "https://api.telegram.org/bot" + str(self.access_token) + "/getUpdates"
-        )
+    def get_chat_id(self, access_token) -> int:
+        ping_url = "https://api.telegram.org/bot" + str(access_token) + "/getUpdates"
         response = requests.get(ping_url).json()
         chat_id = response["result"][0]["message"]["chat"]["id"]
         return chat_id
 
     def read_token_and_chat_id(self) -> Tuple[str, int]:
-        with open(self.credentials_file, "w") as f:
+        with open(self.credentials_file, "r") as f:
             d = json.loads(f.read())
             access_token = d["access_token"]
-            user_id = d["user_id"]
-        return access_token, user_id
+            chat_id = d["chat_id"]
+        return access_token, chat_id
 
     def write_token_and_chat_id(self, token: str, chat_id: int):
         d = dict(access_token=token, chat_id=chat_id)

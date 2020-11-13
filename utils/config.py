@@ -25,8 +25,9 @@ def parse_args():
         help="send train information to telegram after training",
     )
 
-    # parser.add_argument('--debug', action='store_true',
-    #                     help='Turns off logging and checkpointing')
+    parser.add_argument(
+        "--debug", action="store_true", help="Turns off logging and checkpointing"
+    )
     return parser.parse_args()
 
 
@@ -35,7 +36,7 @@ def setup_experiment():
     cfg = load_config(args.config_file)
     experiment = dict(args=args, cfg=cfg)
 
-    set_deterministic(cfg.defaults.seeds)
+    set_deterministic(cfg.defaults.seed)
 
     if args.tg_logging:
         tg_logger = TelegramLogger()

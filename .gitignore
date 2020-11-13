@@ -108,3 +108,8 @@ venv.bak/
 
 # Pycharm
 .idea
+
+# TG logger credentials
+telegram_credentials.json
+
+checkpoints/

@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 
-from models import get_pipeline
+from pipelines import get_pipeline
 from utils import dict_remove_key, setup_experiment, update_config
 
 
@@ -17,10 +17,13 @@ def main():
         monitor="val_metric",
         **dict_remove_key(cfg.checkpointing, "metric"),
     )
+    print(cfg.train_stages)
 
-    for stage_name, stage_cfg in cfg.train_stages.items():
+    for stage_cfg in cfg.train_stages:
+        stage_name = stage_cfg.name
         print(f"Start stage: {stage_name}\n" + "-" * 40)
 
+        stage_cfg = dict_remove_key(stage_cfg, "name")
         cfg = update_config(cfg, stage_cfg)
         model.update_config(cfg)
 
