@@ -68,17 +68,22 @@ def extract_config_name(config_path):
 
 
 def update_config(cfg, stage_cfg):
-    # TODO update with current config `list` paradigm
     cfg = copy.deepcopy(cfg)
 
     for component_name, component_cfg in stage_cfg.items():
 
-        if "cls" in component_cfg:
-            # Replace original component with new
-            cfg[component_name] = copy.deepcopy(component_cfg)
-        else:
+        if component_name in ("lightning", "dataloader", "dataset"):
             # Update changes
             for k, v in component_cfg.items():
-                cfg[component_name].params[k] = v
+                cfg[component_name][k] = v
+
+        elif component_name in ("optimizer", "scheduler", "criterion"):
+            # Replace original component with new
+            cfg[component_name] = copy.deepcopy(component_cfg)
+
+        else:
+            raise KeyError(
+                f"Component {component_name} can't be replaced during training."
+            )
 
     return cfg

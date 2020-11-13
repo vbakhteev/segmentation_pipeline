@@ -80,7 +80,7 @@ logging:
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
-  gpus: 1
+  gpus: 0
   num_nodes: 1
 
 # Parameters defined in stages are used to update fields defined above
@@ -92,4 +92,4 @@ train_stages:
   - name: fine-tuning
     lightning:
       max_epochs: 10
-    optimizer: ['lr': 0.0001]
+    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0000s1}]

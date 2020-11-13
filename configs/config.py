@@ -63,7 +63,7 @@ def get_default():
         {
             "name": "fine-tuning",
             "lightning": {"max_epochs": 20},
-            "optimizer": [{"lr": 0.00001}],
+            "optimizer": [{"cls": "torch.optim.SGD", "lr": 0.00001}],
         },
     ]
     return _C
