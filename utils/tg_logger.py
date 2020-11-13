@@ -68,7 +68,8 @@ class TelegramLogger:
         # TODO implement rules for validation
         return True
 
-    def get_chat_id(self, access_token) -> int:
+    @staticmethod
+    def get_chat_id(access_token) -> int:
         ping_url = "https://api.telegram.org/bot" + str(access_token) + "/getUpdates"
         response = requests.get(ping_url).json()
         chat_id = response["result"][0]["message"]["chat"]["id"]

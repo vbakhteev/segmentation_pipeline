@@ -11,24 +11,26 @@ def main():
     pipeline_cls = get_pipeline(cfg)
     model = pipeline_cls(experiment)
 
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        dirpath=args.checkpoints_dir,
-        verbose=True,
-        monitor="val_metric",
-        **dict_remove_key(cfg.checkpointing, "metric"),
-    )
-    print(cfg.train_stages)
+    callbacks = []
+
+    if not args.debug:
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=args.checkpoints_dir,
+            verbose=True,
+            monitor="val_metric",
+            **dict_remove_key(cfg.checkpointing, "metric"),
+        )
+        callbacks += [checkpoint_callback]
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
         print(f"Start stage: {stage_name}\n" + "-" * 40)
 
-        stage_cfg = dict_remove_key(stage_cfg, "name")
-        cfg = update_config(cfg, stage_cfg)
+        cfg = update_config(cfg, dict_remove_key(stage_cfg, "name"))
         model.update_config(cfg)
 
         trainer = pl.Trainer(
-            callbacks=[checkpoint_callback],
+            callbacks=callbacks,
             weights_summary=None,
             progress_bar_refresh_rate=1,
             # overfit_pct=train_sample,
@@ -39,7 +41,13 @@ def main():
 
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
-        tg_logger.send_message("Best Validation Metric: ")
+
+        message = (
+            f"Experiment {args.checkpoints_dir} is finished.\n"
+            f"Best Validation Metric: {checkpoint_callback.best_model_score:.4f}"
+        )
+
+        tg_logger.send_message(message)
         # tg_logger.send_image()
 
 
