@@ -1,11 +1,10 @@
+import cv2
 import json
+import numpy as np
 import os
+import requests
 import tempfile
 from typing import Tuple
-
-import cv2
-import numpy as np
-import requests
 
 
 class TelegramLogger:
@@ -52,21 +51,20 @@ class TelegramLogger:
         if os.path.exists(self.credentials_file):
             return self.read_token_and_chat_id()
 
-        access_token = input("Enter telegram access token: ")
-        input("Send any message to telegram bot and press enter.")
-        chat_id = self.get_chat_id(access_token)
-
-        if not self.valid(access_token, chat_id):
+        try:
+            access_token = input("Enter telegram access token: ")
+            input("Send any message to telegram bot and press enter.")
+            chat_id = self.get_chat_id(access_token)
+        except KeyError:
             print("Try again.")
             return self.get_token_and_chat_id()
+        except Exception as e:
+            print(e)
+            raise
 
         self.write_token_and_chat_id(access_token, chat_id)
 
         return access_token, chat_id
-
-    def valid(self, access_token: str, chat_id: int) -> bool:
-        # TODO implement rules for validation
-        return True
 
     @staticmethod
     def get_chat_id(access_token) -> int:
