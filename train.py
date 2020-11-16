@@ -12,7 +12,6 @@ def main():
     model = pipeline_cls(experiment)
 
     callbacks = []
-
     if not args.debug:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=args.checkpoints_dir,
@@ -41,12 +40,11 @@ def main():
 
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
-
-        message = (
-            f"Experiment {args.checkpoints_dir} is finished.\n"
-            f"Best Validation Metric: {checkpoint_callback.best_model_score:.4f}"
+        message = "Experiment {}. Best validation {}: {:.4f}".format(
+            args.checkpoints_dir,
+            cfg.checkpointing.metric.name,
+            checkpoint_callback.best_model_score,
         )
-
         tg_logger.send_message(message)
         # tg_logger.send_image()
 

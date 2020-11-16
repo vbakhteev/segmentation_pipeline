@@ -109,7 +109,7 @@ venv.bak/
 # Pycharm
 .idea
 
-# TG logger credentials
+# artifacts
 telegram_credentials.json
-
 checkpoints/
+lightning_logs/

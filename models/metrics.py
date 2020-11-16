@@ -16,8 +16,16 @@ EPS = 1e-8
 
 
 class BaseMetric(pl.metrics.Metric):
-    def __init__(self, metric_fn: Callable, dist_sync_on_step=False, threshold=0.5):
-        super().__init__(dist_sync_on_step=dist_sync_on_step)
+    def __init__(
+        self,
+        metric_fn: Callable,
+        compute_on_step=True,
+        dist_sync_on_step=False,
+        threshold=0.5,
+    ):
+        super(BaseMetric, self).__init__(
+            compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step
+        )
 
         self.metric_fn = metric_fn
         self.threshold = threshold
@@ -25,8 +33,8 @@ class BaseMetric(pl.metrics.Metric):
         self.add_state("scores_sum", default=torch.tensor(0.0), dist_reduce_fx="sum")
         self.add_state("total", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
-    def update(self, preds: torch.Tensor, target: torch.Tensor):
-        preds, target = self._input_format(preds, target)
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
+        # preds, target = self._input_format(preds, target)
 
         if self.threshold is not None:
             preds = (preds > self.threshold).int()
@@ -50,6 +58,10 @@ def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
     returns:
          torch.tensor: vector of IoU for each sample
     """
+    # Binary segmentation case
+    if len(outputs.shape) - len(labels.shape) == 1:
+        labels = labels.unsqueeze(1)
+
     if outputs.shape != labels.shape:
         raise AttributeError(f"Shapes not equal: {outputs.shape} != {labels.shape}")
     outputs = outputs.int()

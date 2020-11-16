@@ -1,10 +1,10 @@
-import cv2
 import json
-import numpy as np
 import os
-import requests
-import tempfile
 from typing import Tuple
+
+import cv2
+import numpy as np
+import requests
 
 
 class TelegramLogger:
@@ -13,34 +13,27 @@ class TelegramLogger:
         self.access_token, self.chat_id = self.get_token_and_chat_id()
 
     def send_message(self, message: str):
-        ping_url = (
-            "https://api.telegram.org/bot"
-            + str(self.access_token)
-            + "/sendMessage?chat_id="
-            + str(self.chat_id)
-            + "&parse_mode=Markdown&text="
-            + message
+        message = message.replace("_", "\_")
+        ping_url = "https://api.telegram.org/bot{}/sendMessage?chat_id={}&parse_mode=Markdown&text={}".format(
+            self.access_token, self.chat_id, message
         )
+
         response = requests.get(ping_url)
 
         return response
 
     def send_image(self, img: np.array):
-        new_file, filename = tempfile.mkstemp()
-
+        """img - GRB"""
+        filename = "tmp.jpg"
         cv2.imwrite(filename, img)
         self.send_photo(filename)
-
-        os.close(new_file)
+        os.remove(filename)
 
     def send_photo(self, filepath):
         file_ = open(filepath, "rb")
         file_dict = {"photo": file_}
-        ping_url = (
-            "https://api.telegram.org/bot"
-            + str(self.access_token)
-            + "/sendPhoto?chat_id="
-            + str(self.chat_id)
+        ping_url = "https://api.telegram.org/bot{}/sendPhoto?chat_id={}".format(
+            self.access_token, self.chat_id
         )
         response = requests.post(ping_url, files=file_dict)
         file_.close()

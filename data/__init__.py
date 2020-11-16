@@ -22,7 +22,7 @@ def get_dataloader(cfg, stage: str, **kwargs):
     transforms_ = transforms_[stage]
     train = stage == "train"
 
-    dataset = dataset_cls(cfg, transforms_, **kwargs)
+    dataset = dataset_cls(cfg, transforms_, is_train=train, **kwargs)
     loader = DataLoader(
         dataset,
         shuffle=train,

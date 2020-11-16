@@ -14,7 +14,7 @@ def get_transforms(cfg):
         valid=pre_transforms + post_transforms,
         test=pre_transforms + post_transforms,
     )
-    for k, v in transforms:
+    for k, v in transforms.items():
         transforms[k] = albu.Compose(v)
 
     return transforms

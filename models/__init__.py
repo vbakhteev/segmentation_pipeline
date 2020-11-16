@@ -1,4 +1,5 @@
 import segmentation_models_pytorch as smp
+from torch import nn
 
 from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
@@ -42,7 +43,16 @@ def get_model(cfg):
     model_cls = name2model[name]
     model = model_cls(**cfg.model.params)
 
-    return model
+    return BaseModel(model)
+
+
+class BaseModel(nn.Module):
+    def __init__(self, model):
+        super(BaseModel, self).__init__()
+        self.model = model
+
+    def forward(self, batch):
+        return self.model(batch["image"])
 
 
 def get_optimizer(params, cfg_optimizer):

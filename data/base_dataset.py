@@ -12,6 +12,7 @@ class BaseDataset(Dataset, ABC):
        -- <__init__>:                      initialize the class,
         first call BaseDataset.__init__(self, cfg, transforms).
        -- <__getitem__>:                   get a data point.
+       -- <prepare_data>                   load train/val/tests split
     """
 
     def __init__(self, cfg, transforms: Callable):
@@ -40,10 +41,24 @@ class BaseDataset(Dataset, ABC):
         """Return the number of images processed during one epoch"""
         return self.samples_per_epoch
 
+    @staticmethod
+    def get_valid_index(index: int, n_samples: int) -> int:
+        return index % n_samples
+
+    @staticmethod
+    @abstractmethod
+    def prepare_data(cfg) -> dict:
+        """Read train/validation/test split or whatever required for preparation
+
+        Returns:
+            a dictionary of data that will be used for creation of dataset and dataloader
+        """
+        pass
+
 
 def get_samples_per_epoch(cfg) -> int:
     steps_per_epoch = cfg.dataset.steps_per_epoch
-    n_gpus = max(cfg.lightning.gpus, 1) * max(cfg.lightning.num_nodes, 1)
+    n_gpus = max(cfg.lightning.gpus * cfg.lightning.num_nodes, 1)
     batch_size = cfg.dataloader.batch_size
 
     return steps_per_epoch * n_gpus * batch_size

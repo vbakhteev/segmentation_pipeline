@@ -3,7 +3,7 @@ import copy
 import pytorch_lightning as pl
 import torch
 
-from data import get_dataloader
+from data import get_dataloader, find_dataset_using_name
 from models import (
     get_criterion,
     get_metric,
@@ -21,6 +21,7 @@ class Segmentator(pl.LightningModule):
         self.cfg = None
         self.criterion = None
         self.update_config(experiment["cfg"])
+        self.prepared_data = None
 
         self.model = get_model(self.cfg)
         self.checkpoint_metric = get_metric(self.cfg.checkpointing.metric)
@@ -43,20 +44,19 @@ class Segmentator(pl.LightningModule):
         return loss
 
     def training_epoch_end(self, outputs: list):
-        loss = torch.cat(outputs).mean()
+        loss = torch.stack([o["loss"] for o in outputs]).mean()
         self.log("train_loss", loss)
 
     def validation_step(self, batch, batch_idx):
-        raise NotImplementedError
         mask = batch["mask"]
         logits_mask = self.model(batch)
 
         loss = self.criterion(logits_mask, mask)
         metric = self.checkpoint_metric(logits_mask, mask)
 
-        for metric_name, metric_o in self.logging_metrics:
-            metric_o(logits_mask, mask)
-            self.log(metric_name, metric_o, on_step=True, on_epoch=True)
+        # for metric_name, metric_o in self.logging_metrics:
+        #     metric_o(logits_mask, mask)
+        #     self.log(metric_name, metric_o, on_step=True, on_epoch=True)
 
         results = {
             "val_loss": loss,
@@ -88,18 +88,17 @@ class Segmentator(pl.LightningModule):
     ####################
 
     def prepare_data(self):
-        # read csv or whatever with train/valid/test split
-        raise NotImplementedError
-
-        self.train_filenames = []
-        self.valid_filenames = []
-        self.test_filenames = []
+        dataset_cls = find_dataset_using_name(self.cfg.dataset.name)
+        self.prepared_data = dataset_cls.prepare_data(self.cfg)
 
     def train_dataloader(self):
-        return get_dataloader(self.cfg, train=True, filenames=self.train_filenames)
+        filenames = self.prepared_data["train_filenames"]
+        return get_dataloader(self.cfg, stage="train", filenames=filenames)
 
     def val_dataloader(self):
-        return get_dataloader(self.cfg, train=False, filenames=self.valid_filenames)
+        filenames = self.prepared_data["valid_filenames"]
+        return get_dataloader(self.cfg, stage="valid", filenames=filenames)
 
     def test_dataloader(self):
-        return get_dataloader(self.cfg, train=False, filenames=self.test_filenames)
+        filenames = self.prepared_data["test_filenames"]
+        return get_dataloader(self.cfg, stage="test", filenames=filenames)

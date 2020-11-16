@@ -6,9 +6,9 @@ defaults:
 ########################################################
 
 dataset:
-  name: brain_ct                        # Used to get NameDataset from data/name_dataset.py
-  root: '/home/vladbakhteev/data/brain'
-  steps_per_epoch: 1000
+  name: human                        # Used to get NameDataset from data/name_dataset.py
+  root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+  steps_per_epoch: 10
 
   pre_transforms: []
 
@@ -22,11 +22,11 @@ dataset:
       shift_limit: 0.05
       p: 1
 
-  post_transforms: [ { 'name': 'Resize', 'height': 512, 'width': 512 }, { 'name': 'ToTensor' } ]
+  post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
-  num_workers: 8
+  num_workers: 0
   batch_size: 10
   pin_memory: True
 
@@ -38,7 +38,7 @@ model:
   name: 'Unet'
   dim: 2
   pipeline: 'segmentation'      # [segmentation]
-  params: {'encoder_name': 'resnet34', 'in_channels': 1, 'classes': 1}
+  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 1}
 
 criterion: [{
   'cls': 'pytorch_toolbelt.losses.JointLoss',
@@ -87,9 +87,9 @@ lightning:
 train_stages:
   - name: pretraining
     lightning:
-      max_epochs: 20
+      max_epochs: 1
 
-  - name: fine-tuning
-    lightning:
-      max_epochs: 10
-    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0000s1}]
+#  - name: fine-tuning
+#    lightning:
+#      max_epochs: 2
+#    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.00001}]
