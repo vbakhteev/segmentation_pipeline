@@ -26,6 +26,10 @@ class Segmentator(pl.LightningModule):
         self.model = get_model(self.cfg)
         self.checkpoint_metric = get_metric(self.cfg.checkpointing.metric)
         self.logging_metrics = get_metrics(self.cfg.logging.metrics)
+        self.logged_metrics = {
+            k: []
+            for k in ["train_loss", "val_metric"] + list(self.logging_metrics.keys())
+        }
 
     def update_config(self, cfg):
         self.cfg = copy.deepcopy(cfg)
@@ -46,6 +50,7 @@ class Segmentator(pl.LightningModule):
     def training_epoch_end(self, outputs: list):
         loss = torch.stack([o["loss"] for o in outputs]).mean()
         self.log("train_loss", loss)
+        self.logged_metrics["train_loss"] += [loss.item()]
 
     def validation_step(self, batch, batch_idx):
         mask = batch["mask"]
@@ -53,24 +58,18 @@ class Segmentator(pl.LightningModule):
 
         loss = self.criterion(logits_mask, mask)
         metric = self.checkpoint_metric(logits_mask, mask)
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_metric", metric, on_step=False, on_epoch=True, prog_bar=True)
 
-        # for metric_name, metric_o in self.logging_metrics:
-        #     metric_o(logits_mask, mask)
-        #     self.log(metric_name, metric_o, on_step=True, on_epoch=True)
-
-        results = {
-            "val_loss": loss,
-            "val_metric": metric,
-            "progress_bar": {"val_metric": metric},
-        }
-        return results
+        for metric_name, metric_o in self.logging_metrics.items():
+            score = metric_o(logits_mask, mask)
+            self.log(metric_name, score, on_step=False, on_epoch=True)
 
     def validation_epoch_end(self, outputs: list):
-        result = dict()
-        for n in ("val_loss", "val_metric"):
-            result[n] = torch.stack([x[n] for x in outputs]).mean()
+        self.logged_metrics["val_metric"] += [self.checkpoint_metric.compute().item()]
 
-        return result
+        for metric_name, metric_o in self.logging_metrics.items():
+            self.logged_metrics[metric_name] += [metric_o.compute().item()]
 
     def test_step(self, batch, batch_idx):
         raise NotImplementedError

@@ -23,8 +23,10 @@ class TelegramLogger:
         return response
 
     def send_image(self, img: np.array):
-        """img - GRB"""
+        """img - RGB"""
         filename = "tmp.jpg"
+
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(filename, img)
         self.send_photo(filename)
         os.remove(filename)

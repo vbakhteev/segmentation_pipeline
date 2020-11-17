@@ -15,15 +15,7 @@ class HumanDataset(BaseDataset):
     """
 
     def __init__(self, cfg, transforms: Callable, is_train: bool, filenames: list):
-        """Initialize this dataset class.
-        Parameters:
-               cfg (Config) -- contains all the experiment parameters; needs to be an instance of EasyDict
-               transforms -- preprocessing transformations of samples
-               filenames -- list of filenames without extensions.
-        """
-        BaseDataset.__init__(self, cfg, transforms)
-
-        self.is_train = is_train
+        BaseDataset.__init__(self, cfg, transforms, is_train)
 
         filenames_set = set(filenames)
         self.imgs_paths = filter_paths(self.root / "Training_Images", filenames_set)
@@ -31,14 +23,11 @@ class HumanDataset(BaseDataset):
 
         assert len(self.imgs_paths) == len(self.masks_paths)
 
-    def __getitem__(self, index: int) -> dict:
+    def __getitem(self, index: int) -> dict:
         """Returns a dictionary that contains image, mask and some metadata
         image (tensor) -- an image in the input domain
         mask (tensor) -- corresponding mask
         """
-        if self.is_train:
-            index = self.get_valid_index(index, len(self.imgs_paths))
-
         image = cv2.imread(str(self.imgs_paths[index]))[:, :, ::-1].copy()
         mask = cv2.imread(str(self.masks_paths[index]), 0)
 
@@ -48,16 +37,12 @@ class HumanDataset(BaseDataset):
 
         return {"image": image, "mask": mask}
 
-    def __len__(self):
-        if self.is_train:
-            return super().__len__()
-
+    def __len(self):
         return len(self.imgs_paths)
 
     @staticmethod
     def prepare_data(cfg) -> dict:
         """Read train/validation split
-
         Returns:
             a dictionary of data that will be used for creation of dataset and dataloader
         """

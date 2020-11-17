@@ -44,7 +44,7 @@ def setup_experiment():
 
     if args.checkpoints_dir is None:
         checkpoints_name = extract_config_name(args.config_file)
-        checkpoints_name = checkpoints_name + datetime.now().strftime("_%d_%H:%M:%S")
+        checkpoints_name = checkpoints_name + datetime.now().strftime("_%B%d_%sH:%M:%S")
         args.checkpoints_dir = "checkpoints/" + checkpoints_name
 
     checkpoints_dir = Path(args.checkpoints_dir)

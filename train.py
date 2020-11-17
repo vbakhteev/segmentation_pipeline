@@ -1,7 +1,13 @@
 import pytorch_lightning as pl
 
 from pipelines import get_pipeline
-from utils import dict_remove_key, setup_experiment, update_config
+from utils import (
+    dict_remove_key,
+    setup_experiment,
+    update_config,
+    get_logger,
+    metrics_to_image,
+)
 
 
 def main():
@@ -20,6 +26,7 @@ def main():
             **dict_remove_key(cfg.checkpointing, "metric"),
         )
         callbacks += [checkpoint_callback]
+    logger = get_logger(args, cfg.logging)
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
@@ -30,23 +37,28 @@ def main():
 
         trainer = pl.Trainer(
             callbacks=callbacks,
+            logger=logger,
             weights_summary=None,
             progress_bar_refresh_rate=1,
-            # overfit_pct=train_sample,
-            num_sanity_val_steps=20,
+            num_sanity_val_steps=0,
             **cfg.lightning,
         )
         trainer.fit(model)
 
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
-        message = "Experiment {}. Best validation {}: {:.4f}".format(
+        message = "Experiment {}.\nBest validation {}: {:.4f}".format(
             args.checkpoints_dir,
             cfg.checkpointing.metric.name,
             checkpoint_callback.best_model_score,
         )
         tg_logger.send_message(message)
-        # tg_logger.send_image()
+
+        # TODO get validation loss
+        metrics = model.logged_metrics
+        if len(metrics):
+            img = metrics_to_image(metrics)
+            tg_logger.send_image(img)
 
 
 if __name__ == "__main__":

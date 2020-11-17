@@ -11,11 +11,12 @@ class BaseDataset(Dataset, ABC):
     To create a subclass, you need to implement the following four functions:
        -- <__init__>:                      initialize the class,
         first call BaseDataset.__init__(self, cfg, transforms).
-       -- <__getitem__>:                   get a data point.
-       -- <prepare_data>                   load train/val/tests split
+       -- <__getitem>:                     get a data point.
+       -- <__len>:                         defines size of dataset instead of __len__
+       -- <prepare_data>:                  load train/val/tests split. Called in LightningModule.prepare_data
     """
 
-    def __init__(self, cfg, transforms: Callable):
+    def __init__(self, cfg, transforms: Callable, is_train: bool):
         """Initialize the class; save the options in the class
 
         Parameters:
@@ -25,9 +26,10 @@ class BaseDataset(Dataset, ABC):
         self.samples_per_epoch = get_samples_per_epoch(cfg)
         self.root = Path(cfg.dataset.root)
         self.transforms = transforms
+        self.is_train = is_train
 
     @abstractmethod
-    def __getitem__(self, index: int) -> dict:
+    def __getitem(self, index: int) -> dict:
         """Return a data point and its metadata information.
 
         Parameters:
@@ -37,13 +39,10 @@ class BaseDataset(Dataset, ABC):
         """
         pass
 
-    def __len__(self) -> int:
-        """Return the number of images processed during one epoch"""
-        return self.samples_per_epoch
-
-    @staticmethod
-    def get_valid_index(index: int, n_samples: int) -> int:
-        return index % n_samples
+    @abstractmethod
+    def __len(self) -> int:
+        """Returns dataset size"""
+        pass
 
     @staticmethod
     @abstractmethod
@@ -54,6 +53,29 @@ class BaseDataset(Dataset, ABC):
             a dictionary of data that will be used for creation of dataset and dataloader
         """
         pass
+
+    def get_valid_index(self, index: int) -> int:
+        return index % self.__len()
+
+    def __getitem__(self, index: int) -> dict:
+        """Return a data point and its metadata information.
+
+        Parameters:
+            index - a random integer for data indexing
+        Returns:
+            a dictionary of data with their names. It usually contains the data itself and its metadata information.
+        """
+        if self.is_train:
+            index = self.get_valid_index(index)
+
+        return self.__getitem(index)
+
+    def __len__(self) -> int:
+        """Return the number of images processed during one epoch"""
+        if self.is_train:
+            return self.samples_per_epoch
+        else:
+            return self.__len()
 
 
 def get_samples_per_epoch(cfg) -> int:

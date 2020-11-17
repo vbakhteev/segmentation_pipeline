@@ -50,6 +50,8 @@ def get_default():
 
     # Logging
     _C.logging = CN()
+    _C.logging.name = None
+    _C.logging.params = {}
     _C.logging.metrics = [{"name": "intersection_over_union", "threshold": 0.5}]
 
     # Lightning. You can add any argument for pytorch_lightning.Trainer
