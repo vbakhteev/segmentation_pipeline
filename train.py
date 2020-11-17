@@ -30,7 +30,7 @@ def main():
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
-        print(f"Start stage: {stage_name}\n" + "-" * 40)
+        print("#" * 40 + f"\nStart stage: {stage_name}\n" + "#" * 40)
 
         cfg = update_config(cfg, dict_remove_key(stage_cfg, "name"))
         model.update_config(cfg)
@@ -47,7 +47,7 @@ def main():
 
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
-        message = "Experiment {}.\nBest validation {}: {:.4f}".format(
+        message = "Experiment {}.\nBest {}: {:.4f}".format(
             args.checkpoints_dir,
             cfg.checkpointing.metric.name,
             checkpoint_callback.best_model_score,

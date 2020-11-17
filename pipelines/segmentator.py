@@ -90,14 +90,14 @@ class Segmentator(pl.LightningModule):
         dataset_cls = find_dataset_using_name(self.cfg.dataset.name)
         self.prepared_data = dataset_cls.prepare_data(self.cfg)
 
+    def get_dataloader(self, stage):
+        return get_dataloader(self.cfg, stage=stage, **self.prepared_data[stage])
+
     def train_dataloader(self):
-        filenames = self.prepared_data["train_filenames"]
-        return get_dataloader(self.cfg, stage="train", filenames=filenames)
+        return self.get_dataloader("train")
 
     def val_dataloader(self):
-        filenames = self.prepared_data["valid_filenames"]
-        return get_dataloader(self.cfg, stage="valid", filenames=filenames)
+        return self.get_dataloader("valid")
 
     def test_dataloader(self):
-        filenames = self.prepared_data["test_filenames"]
-        return get_dataloader(self.cfg, stage="test", filenames=filenames)
+        return self.get_dataloader("test")

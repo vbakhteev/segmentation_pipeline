@@ -16,17 +16,25 @@ from data.transforms import get_transforms
 from .utils import find_dataset_using_name
 
 
-def get_dataloader(cfg, stage: str, **kwargs):
+def get_dataloader(cfg, stage: str, **kwargs) -> DataLoader:
+    """Returns dataloader by given config and stage
+    stage: [train | valid | test]
+    """
     dataset_cls = find_dataset_using_name(cfg.dataset.name)
     transforms_ = get_transforms(cfg)
     transforms_ = transforms_[stage]
-    train = stage == "train"
+    is_train = stage == "train"
 
-    dataset = dataset_cls(cfg, transforms_, is_train=train, **kwargs)
+    dataset = dataset_cls(
+        cfg=cfg,
+        transforms=transforms_,
+        is_train=is_train,
+        **kwargs,
+    )
     loader = DataLoader(
         dataset,
-        shuffle=train,
-        drop_last=train,
+        shuffle=is_train,
+        drop_last=is_train,
         sampler=None,
         collate_fn=None,
         **cfg.dataloader,  # num_workers,batch_size,pin_memory

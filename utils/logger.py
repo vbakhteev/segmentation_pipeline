@@ -22,7 +22,7 @@ def get_logger(args, cfg_logging):
     if cfg_logging.name is None:
         return None
     if cfg_logging.name not in available_loggers:
-        raise KeyError(f"Legger {cfg_logging.name} is not supported.")
+        raise KeyError(f"Logger {cfg_logging.name} is not supported.")
 
     logger_cls = available_loggers[cfg_logging.name]
     logger = logger_cls(**cfg_logging.params)

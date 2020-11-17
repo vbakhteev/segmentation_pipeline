@@ -23,7 +23,7 @@ class HumanDataset(BaseDataset):
 
         assert len(self.imgs_paths) == len(self.masks_paths)
 
-    def __getitem(self, index: int) -> dict:
+    def _getitem(self, index: int) -> dict:
         """Returns a dictionary that contains image, mask and some metadata
         image (tensor) -- an image in the input domain
         mask (tensor) -- corresponding mask
@@ -37,7 +37,7 @@ class HumanDataset(BaseDataset):
 
         return {"image": image, "mask": mask}
 
-    def __len(self):
+    def _len(self):
         return len(self.imgs_paths)
 
     @staticmethod
@@ -52,7 +52,11 @@ class HumanDataset(BaseDataset):
             filenames, random_state=cfg.defaults.seed
         )
 
-        return dict(train_filenames=train_filenames, valid_filenames=valid_filenames)
+        result = dict(
+            train={"filenames": train_filenames},
+            valid={"filenames": valid_filenames},
+        )
+        return result
 
 
 def filter_paths(directory: Path, filenames: Iterable) -> list:

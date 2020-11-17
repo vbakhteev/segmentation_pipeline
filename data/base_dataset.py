@@ -29,7 +29,7 @@ class BaseDataset(Dataset, ABC):
         self.is_train = is_train
 
     @abstractmethod
-    def __getitem(self, index: int) -> dict:
+    def _getitem(self, index: int) -> dict:
         """Return a data point and its metadata information.
 
         Parameters:
@@ -40,7 +40,7 @@ class BaseDataset(Dataset, ABC):
         pass
 
     @abstractmethod
-    def __len(self) -> int:
+    def _len(self) -> int:
         """Returns dataset size"""
         pass
 
@@ -50,12 +50,17 @@ class BaseDataset(Dataset, ABC):
         """Read train/validation/test split or whatever required for preparation
 
         Returns:
-            a dictionary of data that will be used for creation of dataset and dataloader
+            a dictionary of dictionaries that will be used for creation of dataset and dataloader
+            {'train': {params...}
+            'valid': {params...}
+            'test': {params...}}
+
+            params are arguments that will be passed in __init__()
         """
         pass
 
     def get_valid_index(self, index: int) -> int:
-        return index % self.__len()
+        return index % self._len()
 
     def __getitem__(self, index: int) -> dict:
         """Return a data point and its metadata information.
@@ -68,14 +73,14 @@ class BaseDataset(Dataset, ABC):
         if self.is_train:
             index = self.get_valid_index(index)
 
-        return self.__getitem(index)
+        return self._getitem(index)
 
     def __len__(self) -> int:
         """Return the number of images processed during one epoch"""
         if self.is_train:
             return self.samples_per_epoch
         else:
-            return self.__len()
+            return self._len()
 
 
 def get_samples_per_epoch(cfg) -> int:
