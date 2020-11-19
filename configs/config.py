@@ -17,7 +17,7 @@ def get_default():
     _C.dataset.transforms = []
 
     # DataLoader
-    _C.dataloader = CN()
+    _C.dataloader = CN(new_allowed=True)
     _C.dataloader.num_workers = 1
     _C.dataloader.batch_size = 1
     _C.dataloader.pin_memory = True
@@ -55,7 +55,7 @@ def get_default():
     _C.logging.metrics = [{"name": "intersection_over_union", "threshold": 0.5}]
 
     # Lightning. You can add any argument for pytorch_lightning.Trainer
-    _C.lightning = CN()
+    _C.lightning = CN(new_allowed=True)
     _C.lightning.gpus = 1
     _C.lightning.num_nodes = 1
 

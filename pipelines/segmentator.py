@@ -3,7 +3,7 @@ import copy
 import pytorch_lightning as pl
 import torch
 
-from data import get_dataloader, find_dataset_using_name
+from data import get_dataloader
 from models import (
     get_criterion,
     get_metric,
@@ -23,7 +23,11 @@ class Segmentator(pl.LightningModule):
         self.update_config(experiment["cfg"])
         self.prepared_data = None
 
-        self.model = get_model(self.cfg)
+        self.model = get_model(
+            n_dim=self.cfg.model.dim,
+            name=self.cfg.model.name,
+            params=self.cfg.model.params,
+        )
         self.checkpoint_metric = get_metric(self.cfg.checkpointing.metric)
         self.logging_metrics = get_metrics(self.cfg.logging.metrics)
         self.logged_metrics = {
@@ -86,12 +90,8 @@ class Segmentator(pl.LightningModule):
     # DATA RELATED HOOKS
     ####################
 
-    def prepare_data(self):
-        dataset_cls = find_dataset_using_name(self.cfg.dataset.name)
-        self.prepared_data = dataset_cls.prepare_data(self.cfg)
-
     def get_dataloader(self, stage):
-        return get_dataloader(self.cfg, stage=stage, **self.prepared_data[stage])
+        return get_dataloader(self.cfg, stage=stage)
 
     def train_dataloader(self):
         return self.get_dataloader("train")

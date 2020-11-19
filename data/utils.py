@@ -1,5 +1,7 @@
 import importlib
 
+import cv2
+
 from .base_dataset import BaseDataset
 
 
@@ -25,3 +27,9 @@ def find_dataset_using_name(dataset_name: str):
         )
 
     return dataset
+
+
+def read_2d_img_cv2(path):
+    image = cv2.imread(str(path))
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return image
