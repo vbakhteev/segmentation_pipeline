@@ -30,18 +30,19 @@ available_2d_models = {
 available_3d_models = {}  # type: ignore
 
 
-def get_model(cfg):
-    if cfg.model.dim == 2:
+def get_model(n_dim: int, name: str, params: dict) -> nn.Module:
+    if n_dim == 2:
         name2model = available_2d_models
-    else:
+    elif n_dim == 3:
         name2model = available_3d_models
+    else:
+        name2model = {}
 
-    name = cfg.model.name
     if name not in name2model:
-        raise KeyError(f"Model {name} is not supported for {cfg.model.dim}D")
+        raise KeyError(f"Model {name} is not supported for {n_dim}D")
 
     model_cls = name2model[name]
-    model = model_cls(**cfg.model.params)
+    model = model_cls(**params)
 
     return BaseModel(model)
 

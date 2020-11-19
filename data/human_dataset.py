@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Union
 
 import cv2
 from sklearn.model_selection import train_test_split
 
 from .base_dataset import BaseDataset
+from .utils import read_2d_img_cv2
 
 
 class HumanDataset(BaseDataset):
@@ -14,8 +15,15 @@ class HumanDataset(BaseDataset):
     with all train, validation and test images/masks.
     """
 
-    def __init__(self, cfg, transforms: Callable, is_train: bool, filenames: list):
-        BaseDataset.__init__(self, cfg, transforms, is_train)
+    def __init__(
+        self,
+        root: Union[str, Path],
+        samples_per_epoch: int,
+        transforms: Callable,
+        is_train: bool,
+        filenames: list,
+    ):
+        super().__init__(root, samples_per_epoch, transforms, is_train)
 
         filenames_set = set(filenames)
         self.imgs_paths = filter_paths(self.root / "Training_Images", filenames_set)
@@ -28,7 +36,7 @@ class HumanDataset(BaseDataset):
         image (tensor) -- an image in the input domain
         mask (tensor) -- corresponding mask
         """
-        image = cv2.imread(str(self.imgs_paths[index]))[:, :, ::-1].copy()
+        image = read_2d_img_cv2(self.imgs_paths[index])
         mask = cv2.imread(str(self.masks_paths[index]), 0)
 
         sample = self.transforms(image=image, mask=mask)
@@ -41,7 +49,7 @@ class HumanDataset(BaseDataset):
         return len(self.imgs_paths)
 
     @staticmethod
-    def prepare_data(cfg) -> dict:
+    def prepare_data(cfg=None) -> dict:
         """Read train/validation split
         Returns:
             a dictionary of data that will be used for creation of dataset and dataloader

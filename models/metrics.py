@@ -43,7 +43,7 @@ class BaseMetric(pl.metrics.Metric):
         scores = self.metric_fn(preds, target)
 
         self.scores_sum += torch.sum(scores)
-        self.total += target.shape[0]
+        self.total += scores.shape[0] if len(scores.shape) else 1
 
     def compute(self):
         return self.scores_sum / self.total

@@ -10,27 +10,34 @@ Now you can use the dataset class by specifying flag '--dataset_mode dummy'.
 See our template dataset class 'template_dataset.py' for more details.
 """
 
+from typing import Callable, Optional
+
 from torch.utils.data import DataLoader
 
 from data.transforms import get_transforms
 from .utils import find_dataset_using_name
 
 
-def get_dataloader(cfg, stage: str, **kwargs) -> DataLoader:
-    """Returns dataloader by given config and stage
-    stage: [train | valid | test]
-    """
-    dataset_cls = find_dataset_using_name(cfg.dataset.name)
-    transforms_ = get_transforms(cfg)
-    transforms_ = transforms_[stage]
-    is_train = stage == "train"
+def get_dataloader(
+    cfg, stage: str, transforms_: Optional[Callable] = None
+) -> DataLoader:
+    if stage not in ("train", "valid", "test"):
+        raise KeyError(f"{stage} dataloader not is not supported")
 
+    is_train = stage == "train"
+    transforms_ = transforms_ or get_transforms(cfg)[stage]
+    samples_per_epoch = get_samples_per_epoch(cfg)
+
+    dataset_cls = find_dataset_using_name(cfg.dataset.name)
+    dataset_params = dataset_cls.prepare_data(cfg)[stage]
     dataset = dataset_cls(
-        cfg=cfg,
+        root=cfg.dataset.root,
+        samples_per_epoch=samples_per_epoch,
         transforms=transforms_,
         is_train=is_train,
-        **kwargs,
+        **dataset_params,
     )
+
     loader = DataLoader(
         dataset,
         shuffle=is_train,
@@ -41,3 +48,11 @@ def get_dataloader(cfg, stage: str, **kwargs) -> DataLoader:
     )
 
     return loader
+
+
+def get_samples_per_epoch(cfg):
+    spe = cfg.dataset.steps_per_epoch
+    bs = cfg.dataloader.batch_size
+    n_gpus = max(cfg.lightning.gpus * cfg.lightning.num_nodes, 1)
+
+    return spe * n_gpus * bs
