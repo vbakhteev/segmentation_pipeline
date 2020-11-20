@@ -49,7 +49,7 @@ class HumanDataset(BaseDataset):
         return len(self.imgs_paths)
 
     @staticmethod
-    def prepare_data(cfg=None) -> dict:
+    def prepare_data(cfg) -> dict:
         """Read train/validation split
         Returns:
             a dictionary of data that will be used for creation of dataset and dataloader
