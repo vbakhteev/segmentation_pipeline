@@ -38,6 +38,9 @@ def setup_experiment():
 
     set_deterministic(cfg.defaults.seed)
 
+    if args.debug:
+       args.tg_logging = False 
+
     if args.tg_logging:
         tg_logger = TelegramLogger()
         experiment["tg_logger"] = tg_logger

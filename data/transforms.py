@@ -49,6 +49,21 @@ def get_albu_object(name, *args, **kwargs):
     return cls(*args, **kwargs)
 
 
+class Crop3d(albu.DualTransform):
+    def __init__(self, size: tuple, always_apply=False, p=1.0):
+        super().__init__(always_apply, p)
+        self.size = size
+    
+    def apply(self, img, **params):
+        return img[:self.size[0], :self.size[1], :self.size[2]]
+
+    def apply_to_mask(self, mask, **params):
+        return mask[:self.size[0], :self.size[1], :self.size[2]]
+
+    def get_transform_init_args_names(self):
+        return ("size",)
+
+
 if __name__ == "__main__":
     # For pycharm to not remove imports during imports optimization
     ToTensor()
