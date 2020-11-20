@@ -6,14 +6,11 @@ import nibabel as nib
 from sklearn.model_selection import train_test_split
 
 from .base_dataset import BaseDataset
-from .utils import read_2d_img_cv2
 
 
-class ProstateDataset(BaseDataset):
-    """A dataset class for Human segmentation (for debugging purposes).
-    https://github.com/VikramShenoy97/Human-Segmentation-Dataset
-    It assumes that the directory `root` contains folders `Training_Images` and `Ground_Truth`
-    with all train, validation and test images/masks.
+class HippocampusDataset(BaseDataset):
+    """
+    Data resides at http://medicaldecathlon.com/index.html
     """
 
     def __init__(

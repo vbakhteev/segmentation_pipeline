@@ -6,7 +6,7 @@ defaults:
 ########################################################
 
 dataset:
-  name: prostate                        # Used to get NameDataset from data/name_dataset.py
+  name: hippocampus                       # Used to get NameDataset from data/name_dataset.py
   root: '/home/vladislav/data/hippocampus'
   steps_per_epoch: 50
 
