@@ -14,7 +14,7 @@ dataset:
 
   augmentations: []
 
-  post_transforms: [{'name': 'Crop3d', 'size': [24, 24, 24]}, { 'name': 'ToTensor' }]
+  post_transforms: [{'name': 'Resize3d', 'size': [32, 32, 32]}, { 'name': 'ToTensor' }]
 
 
 dataloader:

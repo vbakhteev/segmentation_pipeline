@@ -1,7 +1,10 @@
 import pydoc
 
+import numpy as np
 import albumentations as albu
 from albumentations.pytorch import ToTensor, ToTensorV2
+
+from .functional_transforms import resize_mask3d, resize_img3d
 
 
 def get_transforms(cfg):
@@ -53,12 +56,27 @@ class Crop3d(albu.DualTransform):
     def __init__(self, size: tuple, always_apply=False, p=1.0):
         super().__init__(always_apply, p)
         self.size = size
-    
+
     def apply(self, img, **params):
-        return img[:self.size[0], :self.size[1], :self.size[2]]
+        return img[: self.size[0], : self.size[1], : self.size[2]]
 
     def apply_to_mask(self, mask, **params):
-        return mask[:self.size[0], :self.size[1], :self.size[2]]
+        return mask[: self.size[0], : self.size[1], : self.size[2]]
+
+    def get_transform_init_args_names(self):
+        return ("size",)
+
+
+class Resize3d(albu.DualTransform):
+    def __init__(self, size: tuple, always_apply=False, p=1.0):
+        super().__init__(always_apply, p)
+        self.size = np.array(size)
+
+    def apply(self, img, **params):
+        return resize_img3d(img, self.size)
+
+    def apply_to_mask(self, mask, **params):
+        return resize_mask3d(mask, self.size)
 
     def get_transform_init_args_names(self):
         return ("size",)
