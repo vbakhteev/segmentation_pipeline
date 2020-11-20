@@ -30,23 +30,23 @@ class BaseMetric(pl.metrics.Metric):
         self.metric_fn = metric_fn
         self.threshold = threshold
 
-        self.add_state("scores_sum", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("scores_sum", default=[], dist_reduce_fx="sum")
         self.add_state("total", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
-        # preds, target = self._input_format(preds, target)
-
-        if self.threshold is not None:
-            preds = (preds > self.threshold).int()
-        target = target.int()
+        preds, target = self._input_format(preds, target)
 
         scores = self.metric_fn(preds, target)
-
-        self.scores_sum += torch.sum(scores)
+        self.scores_sum += [torch.sum(scores)]
         self.total += scores.shape[0] if len(scores.shape) else 1
 
     def compute(self):
-        return self.scores_sum / self.total
+        return torch.stack(self.scores_sum).sum() / self.total
+
+    def _input_format(self, preds, target):
+        preds = preds.sigmoid().int()
+        target = target.int()
+        return preds, target
 
 
 def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):

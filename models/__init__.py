@@ -5,6 +5,7 @@ from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
 from .metrics import BaseMetric, intersection_over_union
 from .metrics import intersection_over_union, BaseMetric
+from .resnet import resnet10, resnet18, resnet34, resnet50, resnet101, resnet152, resnet200
 
 __all__ = [
     "get_model",
@@ -27,7 +28,15 @@ available_2d_models = {
     "DeepLabV3Plus": smp.DeepLabV3Plus,
 }
 
-available_3d_models = {}  # type: ignore
+available_3d_models = {
+    'resnet10': resnet10,
+    'resnet18': resnet18,
+    'resnet34': resnet34,
+    'resnet50': resnet50,
+    'resnet101': resnet101,
+    'resnet152': resnet152,
+    'resnet200': resnet200,
+}
 
 
 def get_model(n_dim: int, name: str, params: dict) -> nn.Module:
