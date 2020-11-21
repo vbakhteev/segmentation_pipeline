@@ -6,7 +6,6 @@ import torch
 from data import get_dataloader
 from models import (
     get_criterion,
-    get_metric,
     get_metrics,
     get_model,
     get_optimizer,
@@ -24,15 +23,18 @@ class Segmentator(pl.LightningModule):
         self.prepared_data = None
 
         self.model = get_model(
-            n_dim=self.cfg.model.dim,
+            model_type="segmentation",
             name=self.cfg.model.name,
+            n_dim=self.cfg.model.n_dim,
             params=self.cfg.model.params,
         )
-        self.checkpoint_metric = get_metric(self.cfg.checkpointing.metric)
-        self.logging_metrics = get_metrics(self.cfg.logging.metrics)
+
+        logging_metrics = get_metrics(self.cfg.logging.metrics)
+        self.logging_names = list(logging_metrics.keys())
+        for name, metric in logging_metrics.items():
+            setattr(self, name, metric)
         self.logged_metrics = {
-            k: []
-            for k in ["train_loss", "val_metric"] + list(self.logging_metrics.keys())
+            k: [] for k in ["train_loss"] + list(logging_metrics.keys())
         }
 
     def update_config(self, cfg):
@@ -61,18 +63,16 @@ class Segmentator(pl.LightningModule):
         logits_mask = self.model(batch)
 
         loss = self.criterion(logits_mask, mask)
-        metric = self.checkpoint_metric(logits_mask, mask)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val_metric", metric, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("valid_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        for metric_name, metric_o in self.logging_metrics.items():
+        for metric_name in self.logging_names:
+            metric_o = getattr(self, metric_name)
             score = metric_o(logits_mask, mask)
-            self.log(metric_name, score, on_step=False, on_epoch=True)
+            self.log(metric_name, score, on_step=False, on_epoch=True, prog_bar=True)
 
     def validation_epoch_end(self, outputs: list):
-        self.logged_metrics["val_metric"] += [self.checkpoint_metric.compute().item()]
-
-        for metric_name, metric_o in self.logging_metrics.items():
+        for metric_name in self.logging_names:
+            metric_o = getattr(self, metric_name)
             self.logged_metrics[metric_name] += [metric_o.compute().item()]
 
     def test_step(self, batch, batch_idx):
@@ -84,7 +84,17 @@ class Segmentator(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = get_optimizer(self.model.parameters(), self.cfg.optimizer[0])
         scheduler = get_scheduler(optimizer, self.cfg.scheduler[0])
-        return {"optimizer": optimizer, "lr_scheduler": scheduler}
+
+        result = {"optimizer": optimizer, "lr_scheduler": scheduler}
+        if "ReduceLROnPlateau" in self.cfg.scheduler[0]["cls"]:
+            result["monitor"] = "valid_loss"
+
+        return result
+
+    def optimizer_zero_grad(self, current_epoch, batch_idx, optimizer, opt_idx):
+        # Faster than optimizer.zero_grad()
+        for param in self.model.parameters():
+            param.grad = None
 
     ####################
     # DATA RELATED HOOKS

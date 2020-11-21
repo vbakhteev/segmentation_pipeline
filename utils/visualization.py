@@ -12,7 +12,10 @@ def metrics_to_image(metrics: dict, n_row=2) -> np.array:
     canvas = FigureCanvas(fig)
 
     for i, (name, metric_list) in enumerate(metrics.items()):
-        ax = axes[i // n_row][i % n_col]
+        if n_col == 1:
+            ax = axes[i % n_row]
+        else:
+            ax = axes[i // n_row][i % n_row]
 
         x = range(1, len(metric_list) + 1)
         ax.plot(x, metric_list)
