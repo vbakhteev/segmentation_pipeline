@@ -3,8 +3,12 @@ pytorch_toolbelt==0.4.0
 segmentation-models-pytorch==0.1.2
 albumentations==0.5.1
 opencv-python==4.4.0.46
+scikit-image==0.17.2
 numpy==1.19.4
+scipy==1.5.4
 torch==1.7.0
+scikit-learn==0.23.2
+matplotlib==3.3.3
 PyYAML==5.3.1
 easydict==1.9
 yacs==0.1.8
