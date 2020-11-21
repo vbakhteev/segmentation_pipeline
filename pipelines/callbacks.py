@@ -14,7 +14,7 @@ def get_callbacks(args, cfg):
     checkpoint_callback, callbacks = None, []
     for callback_cfg in cfg.callbacks:
 
-        if callback_cfg.name == "ModelCheckpoint":
+        if callback_cfg.name == "ModelCheckpoint" and not args.debug:
             checkpoint_callback = callback = get_callback(
                 callback_cfg,
                 dirpath=args.checkpoints_dir,
