@@ -1,6 +1,10 @@
 defaults:
   seed: 0
 
+# specifics about experiment that will be logged to telegram
+description: "2D segmentation of people"
+
+
 ########################################################
 ################### Dataset settings ###################
 ########################################################

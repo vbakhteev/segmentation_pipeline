@@ -39,7 +39,7 @@ def main():
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
 
-        message = f"Experiment {args.checkpoints_dir}."
+        message = "{}\nExperiment {}".format(cfg.description, args.checkpoints_dir)
         if checkpoint_callback is not None:
             message += "\nBest {}: {:.4f}".format(
                 checkpoint_callback.monitor,
