@@ -1,6 +1,7 @@
 import importlib
 
 import cv2
+import jpeg4py
 
 from .base_dataset import BaseDataset
 
@@ -33,3 +34,8 @@ def read_2d_img_cv2(path):
     image = cv2.imread(str(path))
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return image
+
+
+def read_2d_img_jpeg4py(path):
+    img = jpeg4py.JPEG(str(path))
+    return img.decode()

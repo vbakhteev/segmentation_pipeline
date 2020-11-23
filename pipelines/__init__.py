@@ -1,6 +1,9 @@
+from .callbacks import get_callbacks
 from .segmentator import Segmentator
 
-available_pipelines = {"segmentation": Segmentator}
+available_pipelines = {
+    "segmentation": Segmentator,
+}
 
 
 def get_pipeline(cfg):

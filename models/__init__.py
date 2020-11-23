@@ -5,7 +5,15 @@ from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
 from .metrics import BaseMetric, intersection_over_union
 from .metrics import intersection_over_union, BaseMetric
-from .resnet import resnet10, resnet18, resnet34, resnet50, resnet101, resnet152, resnet200
+from .resnet import (
+    resnet10,
+    resnet18,
+    resnet34,
+    resnet50,
+    resnet101,
+    resnet152,
+    resnet200,
+)
 
 __all__ = [
     "get_model",
@@ -18,7 +26,7 @@ __all__ = [
 
 available_metrics = {"intersection_over_union": intersection_over_union}
 
-available_2d_models = {
+available_2d_models_segmentation = {
     "Unet": smp.Unet,
     "Linknet": smp.Linknet,
     "FPN": smp.FPN,
@@ -28,27 +36,37 @@ available_2d_models = {
     "DeepLabV3Plus": smp.DeepLabV3Plus,
 }
 
-available_3d_models = {
-    'resnet10': resnet10,
-    'resnet18': resnet18,
-    'resnet34': resnet34,
-    'resnet50': resnet50,
-    'resnet101': resnet101,
-    'resnet152': resnet152,
-    'resnet200': resnet200,
+available_3d_models_segmentation = {
+    "resnet10": resnet10,
+    "resnet18": resnet18,
+    "resnet34": resnet34,
+    "resnet50": resnet50,
+    "resnet101": resnet101,
+    "resnet152": resnet152,
+    "resnet200": resnet200,
 }
 
 
-def get_model(n_dim: int, name: str, params: dict) -> nn.Module:
+def get_model(name: str, model_type: str, params: dict, n_dim: int) -> nn.Module:
+    assert model_type in ("segmentation",)
+
+    if model_type == "segmentation":
+        return get_segmentation_model(name=name, params=params, n_dim=n_dim)
+
+    else:
+        raise KeyError(f"Model type {model_type} is not supported")
+
+
+def get_segmentation_model(name: str, params: dict, n_dim: int):
     if n_dim == 2:
-        name2model = available_2d_models
+        name2model = available_2d_models_segmentation
     elif n_dim == 3:
-        name2model = available_3d_models
+        name2model = available_3d_models_segmentation
     else:
         name2model = {}
 
     if name not in name2model:
-        raise KeyError(f"Model {name} is not supported for {n_dim}D")
+        raise KeyError(f"Segmentation model {name} is not supported for {n_dim}D")
 
     model_cls = name2model[name]
     model = model_cls(**params)

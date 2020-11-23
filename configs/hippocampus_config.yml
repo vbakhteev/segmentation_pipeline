@@ -1,12 +1,16 @@
 defaults:
   seed: 0
 
+
+description: "3D segmentation of Hippocampus"
+
+
 ########################################################
 ################### Dataset settings ###################
 ########################################################
 
 dataset:
-  name: hippocampus                       # Used to get NameDataset from data/name_dataset.py
+  name: hippocampus
   root: '/home/vladislav/data/hippocampus'
   steps_per_epoch: 50
 
@@ -28,8 +32,8 @@ dataloader:
 
 model:
   name: 'resnet18'
-  dim: 3
-  pipeline: 'segmentation'      # [segmentation]
+  n_dim: 3
+  pipeline: 'segmentation'
   params: {'in_channels': 1, 'num_classes': 1}
 
 criterion: [{
@@ -53,14 +57,10 @@ scheduler: [{
 ################## Training settings ###################
 ########################################################
 
-checkpointing:
-  save_top_k: 1
-  save_last: False
-  mode: 'max'           # if 'max' then bigger metric is better.
-
-  metric:
-    name: 'intersection_over_union'
-    threshold: 0.5
+callbacks: [
+  {'name': 'ModelCheckpoint', 'monitor': 'intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'patience': 15},
+  ]
 
 logging:
   name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]

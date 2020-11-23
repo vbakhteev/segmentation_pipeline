@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 
-from pipelines import get_pipeline
+from pipelines import get_pipeline, get_callbacks
 from utils import (
     dict_remove_key,
     setup_experiment,
@@ -14,19 +14,10 @@ def main():
     experiment = setup_experiment()
     args, cfg = experiment["args"], experiment["cfg"]
 
+    logger = get_logger(args, cfg.logging)
     pipeline_cls = get_pipeline(cfg)
     model = pipeline_cls(experiment)
-
-    callbacks = []
-    if not args.debug:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=args.checkpoints_dir,
-            verbose=True,
-            monitor="val_metric",
-            **dict_remove_key(cfg.checkpointing, "metric"),
-        )
-        callbacks += [checkpoint_callback]
-    logger = get_logger(args, cfg.logging)
+    callbacks, checkpoint_callback = get_callbacks(args, cfg)
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
@@ -47,11 +38,13 @@ def main():
 
     if args.tg_logging:
         tg_logger = experiment["tg_logger"]
-        message = "Experiment {}.\nBest {}: {:.4f}".format(
-            args.checkpoints_dir,
-            cfg.checkpointing.metric.name,
-            checkpoint_callback.best_model_score,
-        )
+
+        message = "{}\nExperiment {}".format(cfg.description, args.checkpoints_dir)
+        if checkpoint_callback is not None:
+            message += "\nBest {}: {:.4f}".format(
+                checkpoint_callback.monitor,
+                checkpoint_callback.best_model_score,
+            )
         tg_logger.send_message(message)
 
         # TODO get validation loss
