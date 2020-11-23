@@ -1,8 +1,8 @@
 defaults:
   seed: 0
 
-
-description: "3D segmentation of Hippocampus"
+# specifics about experiment that will be logged to telegram
+description: "Train segmentation model simultaneously on different datasets"
 
 
 ########################################################
@@ -11,22 +11,37 @@ description: "3D segmentation of Hippocampus"
 
 datasets:
   # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
-  steps_per_epoch: 50
+  steps_per_epoch: 10
 
   list:
-    - id: 0
-      name: hippocampus
-      root: '/home/vladislav/data/hippocampus'
+    - id: 0     # Used to identify dataset in training stages
+      name: human
+      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+      use_to_train: True
+      use_to_validate: True    # Use this dataset for validation
 
       pre_transforms: []
+      augmentations:
+        - name: HorizontalFlip
+        - name: ShiftScaleRotate
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
-      augmentations: []
+    # Example of another source of segmentation images.
+    # To run this example you need to implement `another_human` dataset in `data/`
+    - id: 1
+      name: another_human
+      root: '/Users/vladbahteev/Another-Human-Segmentation-Dataset'
+      use_to_train: True
+      use_to_validate: False     # Don't use this dataset for validation
 
-      post_transforms: [{'name': 'Resize3d', 'size': [32, 32, 32]}, { 'name': 'ToTensor' }]
+      pre_transforms: []
+      augmentations:
+        - name: HorizontalFlips
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
-  num_workers: 2
+  num_workers: 0
   batch_size: 10
   pin_memory: True
 
@@ -35,21 +50,14 @@ dataloader:
 ########################################################
 
 model:
-  name: 'resnet18'
-  n_dim: 3
-  pipeline: 'segmentation'
-  params: {'in_channels': 1, 'num_classes': 1}
+  name: 'Unet'
+  n_dim: 2
+  pipeline: 'segmentation'      # [segmentation]
+  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 1}
 
-criterion: [{
-  'cls': 'pytorch_toolbelt.losses.FocalLoss',
-  'gamma': 3
-}]
+criterion: [{'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3}]
 
-
-optimizer: [{
-  'cls': 'torch.optim.Adam',
-  'lr': 0.001
-}]
+optimizer: [{'cls': 'torch.optim.Adam', 'lr': 0.001}]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
@@ -75,11 +83,11 @@ logging:
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
-  gpus: 1
+  gpus: 0
   num_nodes: 1
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
   - name: training
     lightning:
-      max_epochs: 20
+      max_epochs: 2

@@ -2,7 +2,7 @@ defaults:
   seed: 0
 
 # specifics about experiment that will be logged to telegram
-description: "2D segmentation of people"
+description: "Train model in several stages with different resolutions, augmentations, losses, optimizers and schedulers"
 
 
 ########################################################
@@ -14,45 +14,18 @@ datasets:
   steps_per_epoch: 10
 
   list:
-    - id: 0
-      name: human                        # Used to get NameDataset from data/name_dataset.py
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
-      use_to_train: True
-      use_to_validate: False
-
-      pre_transforms: []
-
-      augmentations:
-        - name: OneOf
-          list:
-            - name: GaussNoise
-            - name: Blur
-        - name: HorizontalFlip
-        - name: ShiftScaleRotate
-          shift_limit: 0.05
-          p: 1
-
-      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
-
-    - id: 1
+    - id: 0     # Used to identify dataset in training stages
       name: human                        # Used to get NameDataset from data/name_dataset.py
       root: '/Users/vladbahteev/Human-Segmentation-Dataset'
       use_to_train: True
       use_to_validate: True
 
-      pre_transforms: [ ]
-
+      pre_transforms: []
       augmentations:
-        - name: OneOf
-          list:
-            - name: GaussNoise
-            - name: Blur
         - name: HorizontalFlip
         - name: ShiftScaleRotate
-          shift_limit: 0.05
-          p: 1
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
-      post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
@@ -70,19 +43,9 @@ model:
   pipeline: 'segmentation'      # [segmentation]
   params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 1}
 
-criterion: [{
-  'cls': 'pytorch_toolbelt.losses.JointLoss',
-  'first_weight': 1.0,
-  'second_weight': 2.0,
-  'first': {'cls': 'pytorch_toolbelt.losses.DiceLoss', 'mode': 'binary'},
-  'second': {'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3}
-}]
+criterion: [{ 'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3 }]
 
-
-optimizer: [{
-  'cls': 'torch.optim.Adam',
-  'lr': 0.001
-}]
+optimizer: [{'cls': 'torch.optim.Adam', 'lr': 0.001}]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
@@ -113,17 +76,54 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - name: res-128
+  - name: res-128-pretraining
     lightning:
       max_epochs: 2
 
-  - name: res-256
-    lightning:
-      max_epochs: 2
 
-    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.00001}]
+  - name: res-256-training
+    lightning:
+      max_epochs: 1
+
+    # Bigger resolution may need to make smaller batch size
+    dataloader:
+      batch_size: 5
 
     datasets:
       list:
         - id: 0
-          use_to_train: False
+
+          # Add Blur and GaussNoise to augmentations
+          augmentations:
+            - name: OneOf
+              list:
+                - name: GaussNoise
+                - name: Blur
+            - name: HorizontalFlip
+            - name: ShiftScaleRotate
+
+          # Change size of result image
+          post_transforms: [
+            {'name': 'Resize', 'height': 256, 'width': 256},
+            {'name': 'ToTensor'},
+          ]
+
+    # Change loss function
+    criterion: [ {
+      'cls': 'pytorch_toolbelt.losses.JointLoss',
+      'first_weight': 1.0,
+      'second_weight': 2.0,
+      'first': { 'cls': 'pytorch_toolbelt.losses.DiceLoss', 'mode': 'binary' },
+      'second': { 'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3 }
+    } ]
+
+
+  - name: fine-tuning
+    lightning:
+      max_epochs: 2
+
+    # SGD more accurate at last steps
+    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 1e-4}]
+
+    # Change to less aggressive scheduler
+    scheduler: [{'cls': 'torch.optim.lr_scheduler.ReduceLROnPlateau', 'factor': 0.2, 'patience': 3}]
