@@ -9,24 +9,48 @@ description: "2D segmentation of people"
 ################### Dataset settings ###################
 ########################################################
 
-dataset:
-  name: human                        # Used to get NameDataset from data/name_dataset.py
-  root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+datasets:
+  # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
   steps_per_epoch: 10
 
-  pre_transforms: []
+  list:
+    - name: human                        # Used to get NameDataset from data/name_dataset.py
+      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+      use_to_train: True
+      use_to_validate: True
 
-  augmentations:
-    - name: OneOf
-      list:
-        - name: GaussNoise
-        - name: Blur
-    - name: HorizontalFlip
-    - name: ShiftScaleRotate
-      shift_limit: 0.05
-      p: 1
+      pre_transforms: []
 
-  post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+      augmentations:
+        - name: OneOf
+          list:
+            - name: GaussNoise
+            - name: Blur
+        - name: HorizontalFlip
+        - name: ShiftScaleRotate
+          shift_limit: 0.05
+          p: 1
+
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+
+    - name: human                        # Used to get NameDataset from data/name_dataset.py
+      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+      use_to_train: True
+      use_to_validate: False
+
+      pre_transforms: [ ]
+
+      augmentations:
+        - name: OneOf
+          list:
+            - name: GaussNoise
+            - name: Blur
+        - name: HorizontalFlip
+        - name: ShiftScaleRotate
+          shift_limit: 0.05
+          p: 1
+
+      post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
@@ -70,7 +94,7 @@ scheduler: [{
 
 callbacks: [
   {'name': 'ModelCheckpoint', 'monitor': 'intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
-  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'patience': 15},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
@@ -87,11 +111,20 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - name: pretraining
+  - name: res-128
     lightning:
       max_epochs: 2
 
-  - name: fine-tuning
+  - name: res-256
     lightning:
       max_epochs: 2
+
     optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.00001}]
+
+    datasets:
+      list:
+        - name: human
+          post_transforms: [
+            {'name': 'Resize', 'height': 256, 'width': 256},
+            {'name': 'ToTensor'},
+          ]

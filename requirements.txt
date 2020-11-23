@@ -5,6 +5,7 @@ albumentations==0.5.1
 opencv-python==4.4.0.46
 scikit-image==0.17.2
 jpeg4py==0.1.4
+nibabel==3.2.0
 numpy==1.19.4
 scipy==1.5.4
 torch==1.7.0

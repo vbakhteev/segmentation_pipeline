@@ -45,15 +45,13 @@ class Mri1stBatchDataset(BaseDataset):
         return {"image": image, "mask": mask}
 
     @staticmethod
-    def prepare_data(cfg=None, root=None) -> dict:
+    def prepare_data(dataset_cfg=None, root=None) -> dict:
         """Read train/validation split
         Returns:
             a dictionary of data that will be used for creation of dataset and dataloader
         """
-        if cfg is not None:
-            root = Path(cfg.dataset.root)
-        else:
-            root = Path(root)
+        root = root if dataset_cfg is None else dataset_cfg.root
+        root = Path(root)
         dirnames = [p.stem for p in root.iterdir() if not p.stem.startswith(".")]
 
         train_filenames, valid_filenames = train_test_split(dirnames, random_state=42)

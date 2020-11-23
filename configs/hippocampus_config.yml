@@ -9,16 +9,19 @@ description: "3D segmentation of Hippocampus"
 ################### Dataset settings ###################
 ########################################################
 
-dataset:
-  name: hippocampus
-  root: '/home/vladislav/data/hippocampus'
+datasets:
+  # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
   steps_per_epoch: 50
 
-  pre_transforms: []
+  list:
+    - name: hippocampus
+      root: '/home/vladislav/data/hippocampus'
 
-  augmentations: []
+      pre_transforms: []
 
-  post_transforms: [{'name': 'Resize3d', 'size': [32, 32, 32]}, { 'name': 'ToTensor' }]
+      augmentations: []
+
+      post_transforms: [{'name': 'Resize3d', 'size': [32, 32, 32]}, { 'name': 'ToTensor' }]
 
 
 dataloader:
@@ -59,7 +62,7 @@ scheduler: [{
 
 callbacks: [
   {'name': 'ModelCheckpoint', 'monitor': 'intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
-  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'patience': 15},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
