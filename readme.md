@@ -18,9 +18,16 @@ Go to `@BotFather` and create your own bot.
 #### Add own dataset:
 To implement your own dataset with name `custom` you need to create `data/custom_dataset.py` and implement class `CustomDataset` that inherits from `BaseDataset` and implements all corresponding methods. 
 After that you need to put path and name of dataset into config file. 
+s
+#### Configuration files:
+Hard to document every peace, better to look at some configs at `examples/`
+
+#### Stages:
+Training is divided into stages where one stage is different from another by different components. For example you can change dataset parameters, augmentations, pre and post processing, loss function, optimizer, scheduler, batch_size and others.
 
 #### Pipelines:
 To add new pipeline (for example, classification) you need to create new file file `pipelines/classifier.py` and implement class `Classifier` that defines training behaviour of models. After that in `pipelines/__init__.py` add name2pipeline mapping in `available_pipelines`.  
+
 
 #### Transforms and Augmentations:
 They are defined in `config.dataset.augmentations` for each experiment. All transforms consist of `pre_transforms, padding and post_transforms` in the same order. `augmentations` apply only to training samples. <br>

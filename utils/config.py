@@ -85,7 +85,7 @@ def update_config(cfg, stage_cfg):
 
                 idx_dataset_to_replace = -1
                 for i in range(len(cfg.datasets)):
-                    if cfg.datasets.list[i].name == dataset_cfg.name:
+                    if cfg.datasets.list[i].id == dataset_cfg.id:
                         idx_dataset_to_replace = i
                         break
 
