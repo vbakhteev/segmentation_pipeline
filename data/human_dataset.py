@@ -49,16 +49,14 @@ class HumanDataset(BaseDataset):
         return len(self.imgs_paths)
 
     @staticmethod
-    def prepare_data(cfg) -> dict:
+    def prepare_data(dataset_cfg) -> dict:
         """Read train/validation split
         Returns:
             a dictionary of data that will be used for creation of dataset and dataloader
         """
-        root = Path(cfg.dataset.root)
+        root = Path(dataset_cfg.root)
         filenames = [p.stem for p in (root / "Training_Images").glob("*.jpg")]
-        train_filenames, valid_filenames = train_test_split(
-            filenames, random_state=cfg.defaults.seed
-        )
+        train_filenames, valid_filenames = train_test_split(filenames, random_state=42)
 
         result = dict(
             train={"filenames": train_filenames},

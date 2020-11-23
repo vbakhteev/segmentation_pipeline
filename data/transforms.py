@@ -7,10 +7,10 @@ from albumentations.pytorch import ToTensor, ToTensorV2
 from .functional_transforms import resize_mask3d, resize_img3d
 
 
-def get_transforms(cfg):
-    pre_transforms = parse_transforms(cfg.dataset.pre_transforms)
-    augmentations = parse_transforms(cfg.dataset.augmentations)
-    post_transforms = parse_transforms(cfg.dataset.post_transforms)
+def get_transforms(dataset_cfg):
+    pre_transforms = parse_transforms(dataset_cfg.pre_transforms)
+    augmentations = parse_transforms(dataset_cfg.augmentations)
+    post_transforms = parse_transforms(dataset_cfg.post_transforms)
 
     transforms = dict(
         train=pre_transforms + augmentations + post_transforms,
@@ -23,10 +23,10 @@ def get_transforms(cfg):
     return transforms
 
 
-def parse_transforms(cfg) -> list:
+def parse_transforms(transforms_cfg: list) -> list:
     transforms = []
 
-    for transform in cfg:
+    for transform in transforms_cfg:
         if transform.name in ("Compose", "OneOf", "OneOrOther"):
             # get inner list of transforms
             inner_transforms = parse_transforms(transform.list)
