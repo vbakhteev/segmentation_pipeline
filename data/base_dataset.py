@@ -55,7 +55,7 @@ class BaseDataset(Dataset, ABC):
 
     @staticmethod
     @abstractmethod
-    def prepare_data(cfg) -> dict:
+    def prepare_data(dataset_cfg) -> dict:
         """Read train/validation/test split or whatever required for your dataset
 
         Returns:

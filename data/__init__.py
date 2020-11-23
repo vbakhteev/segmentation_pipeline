@@ -15,34 +15,34 @@ from typing import Callable, Optional
 from torch.utils.data import DataLoader
 
 from data.transforms import get_transforms
+from .multitask_dataset import MultiTaskDataset, MultiTaskSampler
 from .utils import find_dataset_using_name
 
 
 def get_dataloader(
-    cfg, stage: str, transforms_: Optional[Callable] = None
+    cfg,
+    stage: str,
+    transforms_: Optional[Callable] = None,
 ) -> DataLoader:
     if stage not in ("train", "valid", "test"):
         raise KeyError(f"{stage} dataloader not is not supported")
 
     is_train = stage == "train"
-    transforms_ = transforms_ or get_transforms(cfg)[stage]
-    samples_per_epoch = get_samples_per_epoch(cfg)
 
-    dataset_cls = find_dataset_using_name(cfg.dataset.name)
-    dataset_params = dataset_cls.prepare_data(cfg)[stage]
-    dataset = dataset_cls(
-        root=cfg.dataset.root,
-        samples_per_epoch=samples_per_epoch,
-        transforms=transforms_,
+    datasets, dataset_names = get_datasets(
+        cfg=cfg,
+        stage=stage,
         is_train=is_train,
-        **dataset_params,
+        transforms_=transforms_,
     )
+    dataset = MultiTaskDataset(datasets, dataset_names)
+    sampler = MultiTaskSampler(dataset, cfg.dataloader.batch_size)
 
+    # len(loader) = steps_per_epoch * len(datasets)
     loader = DataLoader(
         dataset,
-        shuffle=is_train,
         drop_last=is_train,
-        sampler=None,
+        sampler=sampler if is_train else None,
         collate_fn=None,
         **cfg.dataloader,  # num_workers,batch_size,pin_memory
     )
@@ -51,8 +51,38 @@ def get_dataloader(
 
 
 def get_samples_per_epoch(cfg):
-    spe = cfg.dataset.steps_per_epoch
+    spe = cfg.datasets.steps_per_epoch
     bs = cfg.dataloader.batch_size
     n_gpus = max(cfg.lightning.gpus * cfg.lightning.num_nodes, 1)
 
     return spe * n_gpus * bs
+
+
+def get_datasets(
+    cfg, stage: str, is_train: bool, transforms_: Optional[Callable]
+) -> tuple:
+    samples_per_epoch = get_samples_per_epoch(cfg)
+
+    datasets, dataset_names = [], []
+    for dataset_cfg in cfg.datasets.list:
+        if stage == "train" and not dataset_cfg.use_to_train:
+            continue
+        if stage == "valid" and not dataset_cfg.use_to_validate:
+            continue
+
+        data_transforms = transforms_ or get_transforms(dataset_cfg)[stage]
+        dataset_cls = find_dataset_using_name(dataset_cfg.name)
+        dataset_params = dataset_cls.prepare_data(dataset_cfg)[stage]
+
+        dataset = dataset_cls(
+            root=dataset_cfg.root,
+            samples_per_epoch=samples_per_epoch,
+            transforms=data_transforms,
+            is_train=is_train,
+            **dataset_params,
+        )
+
+        datasets += [dataset]
+        dataset_names += [dataset_cfg.name]
+
+    return datasets, dataset_names

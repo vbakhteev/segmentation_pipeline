@@ -39,7 +39,7 @@ def setup_experiment():
     set_deterministic(cfg.defaults.seed)
 
     if args.debug:
-       args.tg_logging = False 
+        args.tg_logging = False
 
     if args.tg_logging:
         tg_logger = TelegramLogger()
@@ -75,10 +75,23 @@ def update_config(cfg, stage_cfg):
 
     for component_name, component_cfg in stage_cfg.items():
 
-        if component_name in ("lightning", "dataloader", "dataset"):
+        if component_name in ("lightning", "dataloader"):
             # Update changes
             for k, v in component_cfg.items():
                 cfg[component_name][k] = v
+
+        elif component_name == "datasets":
+            for dataset_cfg in component_cfg.list:
+
+                idx_dataset_to_replace = -1
+                for i in range(len(cfg.datasets)):
+                    if cfg.datasets.list[i].id == dataset_cfg.id:
+                        idx_dataset_to_replace = i
+                        break
+
+                # Update components of dataset_cfg
+                for k, v in dataset_cfg.items():
+                    cfg.datasets.list[idx_dataset_to_replace][k] = v
 
         elif component_name in ("optimizer", "scheduler", "criterion"):
             # Replace original component with new
