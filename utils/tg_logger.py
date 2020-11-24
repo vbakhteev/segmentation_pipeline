@@ -48,7 +48,7 @@ class TelegramLogger:
 
         try:
             access_token = input("Enter telegram access token: ")
-            input("Send any message to telegram bot and press enter.")
+            input("Send any message to bot in telegram and press enter.")
             chat_id = self.get_chat_id(access_token)
         except KeyError:
             print("Try again.")
