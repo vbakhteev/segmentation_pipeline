@@ -1,6 +1,8 @@
 pytorch_lightning==1.0.5
 pytorch_toolbelt==0.4.0
 segmentation-models-pytorch==0.1.2
+pretrainedmodels==0.7.4
+pytorchcv==0.0.60
 albumentations==0.5.1
 opencv-python==4.4.0.46
 scikit-image==0.17.2
