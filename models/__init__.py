@@ -3,8 +3,7 @@ from torch import nn
 
 from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
-from .metrics import BaseMetric, intersection_over_union
-from .metrics import intersection_over_union, BaseMetric
+from .metrics import BaseSegmentationMetric, intersection_over_union
 from .resnet import (
     resnet10,
     resnet18,
@@ -24,7 +23,7 @@ __all__ = [
     "get_criterion",
 ]
 
-available_metrics = {"intersection_over_union": intersection_over_union}
+segmentation_metrics = {"intersection_over_union": intersection_over_union}
 
 available_2d_models_segmentation = {
     "Unet": smp.Unet,
@@ -101,9 +100,11 @@ def get_metrics(cfg_metrics: list) -> dict:
 
 def get_metric(cfg_metric):
     name = cfg_metric.name
-    if name not in available_metrics:
-        raise KeyError(f"Metric {name} is not supported")
 
-    metric_fn = available_metrics[name]
-    params = dict_remove_key(cfg_metric, "name")
-    return BaseMetric(metric_fn, **params)
+    if name in segmentation_metrics:
+        metric_fn = segmentation_metrics[name]
+        params = dict_remove_key(cfg_metric, "name")
+        return BaseSegmentationMetric(metric_fn=metric_fn, **params)
+
+    else:
+        raise KeyError(f"Metric {name} is not supported")

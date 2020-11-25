@@ -1,5 +1,7 @@
-from .base_single_model_pipeline import BaseSingleModel
+import torch
+
 from models import get_model
+from .base_single_model_pipeline import BaseSingleModel
 
 
 class Segmentator(BaseSingleModel):
@@ -13,18 +15,19 @@ class Segmentator(BaseSingleModel):
             n_dim=self.cfg.model.n_dim,
         )
 
-    def training_step(self, batch, batch_idx):
-        mask = batch["mask"]
+    def one_pass(self, batch):
+        mask = batch["mask"].type(torch.int64).unsqueeze(1)
         logits_mask = self.model(batch)
         loss = self.criterion(logits_mask, mask)
 
+        return loss, mask, logits_mask
+
+    def training_step(self, batch, batch_idx):
+        loss, _, _ = self.one_pass(batch)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        mask = batch["mask"]
-        logits_mask = self.model(batch)
-
-        loss = self.criterion(logits_mask, mask)
+        loss, mask, logits_mask = self.one_pass(batch)
         self.log("valid_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
         for metric_name in self.logging_names:

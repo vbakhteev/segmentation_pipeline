@@ -18,7 +18,7 @@ datasets:
       name: human                        # Used to get NameDataset from data/name_dataset.py
       root: '/Users/vladbahteev/Human-Segmentation-Dataset'
       use_to_train: True
-      use_to_validate: False
+      use_to_validate: True
 
       pre_transforms: []
 
@@ -34,26 +34,6 @@ datasets:
 
       post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
-    - id: 1
-      name: human                        # Used to get NameDataset from data/name_dataset.py
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
-      use_to_train: True
-      use_to_validate: True
-
-      pre_transforms: [ ]
-
-      augmentations:
-        - name: OneOf
-          list:
-            - name: GaussNoise
-            - name: Blur
-        - name: HorizontalFlip
-        - name: ShiftScaleRotate
-          shift_limit: 0.05
-          p: 1
-
-      post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
-
 
 dataloader:
   num_workers: 0
@@ -68,15 +48,9 @@ model:
   name: 'Unet'
   n_dim: 2
   pipeline: 'segmentation'      # [segmentation]
-  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 1}
+  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 2}
 
-criterion: [{
-  'cls': 'pytorch_toolbelt.losses.JointLoss',
-  'first_weight': 1.0,
-  'second_weight': 2.0,
-  'first': {'cls': 'pytorch_toolbelt.losses.DiceLoss', 'mode': 'binary'},
-  'second': {'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3}
-}]
+criterion: [{'cls': 'pytorch_toolbelt.losses.SoftCrossEntropyLoss', 'smooth_factor': 0.1}]
 
 
 optimizer: [{
@@ -103,7 +77,7 @@ logging:
   name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]
   params: {}
   metrics: [
-    {'name': 'intersection_over_union', 'threshold': 0.5}
+    {'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5}
   ]
 
 # You can add any argument for pytorch_lightning.Trainer
@@ -121,9 +95,9 @@ train_stages:
     lightning:
       max_epochs: 2
 
-    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.00001}]
+    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0001}]
 
     datasets:
       list:
         - id: 0
-          use_to_train: False
+          post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
