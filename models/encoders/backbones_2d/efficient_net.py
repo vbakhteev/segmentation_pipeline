@@ -1,8 +1,7 @@
-from torch import nn
 from efficientnet_pytorch import EfficientNet
+from torch import nn
 
-from .base_ import BaseEncoder
-
+from models.encoders.base_encoder import BaseEncoder
 
 efficient_net_stages = {
     "efficientnet-b0": (3, 5, 9, 16),
@@ -27,7 +26,13 @@ class EfficientNetEncoder(BaseEncoder):
         self.layer1 = nn.Sequential(*model._blocks[: stage_ids[0]])
         self.layer2 = nn.Sequential(*model._blocks[stage_ids[0] : stage_ids[1]])
         self.layer3 = nn.Sequential(*model._blocks[stage_ids[1] : stage_ids[2]])
-        self.layer4 = nn.Sequential(*model._blocks[stage_ids[2] :])
+
+        last_layers = [model._conv_head, model._bn1, model._swish]
+        self.layer4 = nn.Sequential(
+            *(list(model._blocks[stage_ids[2] :]) + last_layers)
+        )
+
+        self.out_channels = self.get_out_channels_2d()
 
 
 def get_efficientnet(model_name):

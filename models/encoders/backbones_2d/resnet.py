@@ -1,7 +1,7 @@
 import pretrainedmodels
 from torch import nn
 
-from .base_ import BaseEncoder
+from models.encoders.base_encoder import BaseEncoder
 
 
 class ResNetEncoder(BaseEncoder):
@@ -17,6 +17,15 @@ class ResNetEncoder(BaseEncoder):
         self.layer2 = model.layer2
         self.layer3 = model.layer3
         self.layer4 = model.layer4
+
+        self.out_channels = self.get_out_channels_2d()
+
+
+def get_out_channels_resnet_block(block):
+    try:
+        return block.conv3.out_channels
+    except AttributeError:
+        return block.conv2.out_channels
 
 
 def get_resnet(model_name):
