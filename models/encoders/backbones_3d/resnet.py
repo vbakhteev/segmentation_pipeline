@@ -2,11 +2,7 @@ import pretrainedmodels
 from torch import nn
 
 from models.encoders.base_encoder import BaseEncoder
-
-# Hacker
-nn.Conv2d = nn.Conv3d
-nn.BatchNorm2d = nn.BatchNorm3d
-nn.MaxPool2d = nn.MaxPool3d
+from models.utils import change_layers_dim
 
 
 class ResNetEncoder(BaseEncoder):
@@ -25,7 +21,9 @@ class ResNetEncoder(BaseEncoder):
         self.out_channels = self.get_out_channels_3d()
 
 
+@change_layers_dim(from_dim=2, to_dim=3, layer_names=("Conv", "BatchNorm", "MaxPool"))
 def get_resnet(model_name):
     base_model = pretrainedmodels.__dict__[model_name](pretrained=None)
     model = ResNetEncoder(base_model)
+
     return model

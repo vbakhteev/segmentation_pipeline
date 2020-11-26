@@ -45,7 +45,7 @@ dataloader:
 ########################################################
 
 model:
-  name: 'Unet'
+  name: 'SegNet'
   n_dim: 2
   pipeline: 'segmentation'      # [segmentation]
   params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 2}

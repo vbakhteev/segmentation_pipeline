@@ -12,7 +12,10 @@ class ResNetEncoder(BaseEncoder):
             model.bn1,
             model.relu,
         )
-        self.layer1 = model.layer1
+        self.layer1 = nn.Sequential(
+            model.maxpool,
+            model.layer1,
+        )
         self.layer2 = model.layer2
         self.layer3 = model.layer3
         self.layer4 = model.layer4
