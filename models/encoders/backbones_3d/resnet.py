@@ -3,6 +3,11 @@ from torch import nn
 
 from models.encoders.base_encoder import BaseEncoder
 
+# Hacker
+nn.Conv2d = nn.Conv3d
+nn.BatchNorm2d = nn.BatchNorm3d
+nn.MaxPool2d = nn.MaxPool3d
+
 
 class ResNetEncoder(BaseEncoder):
     def __init__(self, model):
@@ -17,17 +22,10 @@ class ResNetEncoder(BaseEncoder):
         self.layer3 = model.layer3
         self.layer4 = model.layer4
 
-        self.out_channels = self.get_out_channels_2d()
-
-
-def get_out_channels_resnet_block(block):
-    try:
-        return block.conv3.out_channels
-    except AttributeError:
-        return block.conv2.out_channels
+        self.out_channels = self.get_out_channels_3d()
 
 
 def get_resnet(model_name):
-    base_model = pretrainedmodels.__dict__[model_name]()
+    base_model = pretrainedmodels.__dict__[model_name](pretrained=None)
     model = ResNetEncoder(base_model)
     return model
