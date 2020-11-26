@@ -11,6 +11,7 @@ class ResNetEncoder(BaseEncoder):
             model.conv1,
             model.bn1,
             model.relu,
+            model.maxpool,
         )
         self.layer1 = model.layer1
         self.layer2 = model.layer2
