@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .base_ import BaseEncoder
+from models.encoders.base_encoder import BaseEncoder
 
 
 class ResNextEncoder(BaseEncoder):
@@ -17,6 +17,8 @@ class ResNextEncoder(BaseEncoder):
         self.layer2 = model.layer2
         self.layer3 = model.layer3
         self.layer4 = model.layer4
+
+        self.out_channels = self.get_out_channels_2d()
 
 
 def get_resnext_wsl(model_name):

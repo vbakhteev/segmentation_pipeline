@@ -1,6 +1,6 @@
 from pytorchcv.model_provider import get_model as ptcv_get_model
 
-from .base_ import BaseEncoder
+from models.encoders.base_encoder import BaseEncoder
 
 
 class DLAEncoder(BaseEncoder):
@@ -11,6 +11,8 @@ class DLAEncoder(BaseEncoder):
         self.layer2 = model.features.stage2
         self.layer3 = model.features.stage3
         self.layer4 = model.features.stage4
+
+        self.out_channels = self.get_out_channels_2d()
 
 
 def get_dla(model_name):

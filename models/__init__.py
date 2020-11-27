@@ -3,16 +3,9 @@ from torch import nn
 
 from utils import dict_remove_key, object_from_dict
 from .criterions import get_criterion
+from .decoders import SegNet
+from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
-from .resnet import (
-    resnet10,
-    resnet18,
-    resnet34,
-    resnet50,
-    resnet101,
-    resnet152,
-    resnet200,
-)
 
 __all__ = [
     "get_model",
@@ -23,10 +16,9 @@ __all__ = [
     "get_criterion",
 ]
 
-segmentation_metrics = {"intersection_over_union": intersection_over_union}
-
 available_2d_models_segmentation = {
     "Unet": smp.Unet,
+    # "UnetPlusPlus": smp.UnetPlusPlus,
     "Linknet": smp.Linknet,
     "FPN": smp.FPN,
     "PSPNet": smp.PSPNet,
@@ -35,15 +27,9 @@ available_2d_models_segmentation = {
     "DeepLabV3Plus": smp.DeepLabV3Plus,
 }
 
-available_3d_models_segmentation = {
-    "resnet10": resnet10,
-    "resnet18": resnet18,
-    "resnet34": resnet34,
-    "resnet50": resnet50,
-    "resnet101": resnet101,
-    "resnet152": resnet152,
-    "resnet200": resnet200,
-}
+available_models_segmentation = {"SegNet": SegNet}
+
+segmentation_metrics = {"intersection_over_union": intersection_over_union}
 
 
 def get_model(name: str, model_type: str, params: dict, n_dim: int) -> nn.Module:
@@ -57,18 +43,14 @@ def get_model(name: str, model_type: str, params: dict, n_dim: int) -> nn.Module
 
 
 def get_segmentation_model(name: str, params: dict, n_dim: int):
-    if n_dim == 2:
-        name2model = available_2d_models_segmentation
-    elif n_dim == 3:
-        name2model = available_3d_models_segmentation
+    if n_dim == 2 and name in available_2d_models_segmentation:
+        model = available_2d_models_segmentation[name](**params)
+
+    elif name in available_models_segmentation:
+        model = available_models_segmentation[name](n_dim=n_dim, **params)
+
     else:
-        name2model = {}
-
-    if name not in name2model:
         raise KeyError(f"Segmentation model {name} is not supported for {n_dim}D")
-
-    model_cls = name2model[name]
-    model = model_cls(**params)
 
     return BaseModel(model)
 
