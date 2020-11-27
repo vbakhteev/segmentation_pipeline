@@ -29,13 +29,13 @@ def get_dataloader(
 
     is_train = stage == "train"
 
-    datasets, dataset_names = get_datasets(
+    datasets, dataset_ids, dataset_names = get_datasets(
         cfg=cfg,
         stage=stage,
         is_train=is_train,
         transforms_=transforms_,
     )
-    dataset = MultiTaskDataset(datasets, dataset_names)
+    dataset = MultiTaskDataset(datasets, dataset_ids, dataset_names)
     sampler = MultiTaskSampler(dataset, cfg.dataloader.batch_size)
 
     # len(loader) = steps_per_epoch * len(datasets)
@@ -63,7 +63,7 @@ def get_datasets(
 ) -> tuple:
     samples_per_epoch = get_samples_per_epoch(cfg)
 
-    datasets, dataset_names = [], []
+    datasets, dataset_ids, dataset_names = [], [], []
     for dataset_cfg in cfg.datasets.list:
         if stage == "train" and not dataset_cfg.use_to_train:
             continue
@@ -84,5 +84,6 @@ def get_datasets(
 
         datasets += [dataset]
         dataset_names += [dataset_cfg.name]
+        dataset_ids += [dataset_cfg.id]
 
-    return datasets, dataset_names
+    return datasets, dataset_ids, dataset_names

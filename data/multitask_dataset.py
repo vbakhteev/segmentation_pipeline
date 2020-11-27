@@ -6,17 +6,19 @@ from torch.utils.data import Dataset
 
 
 class MultiTaskDataset(Dataset):
-    def __init__(self, datasets: list, names: list):
+    def __init__(self, datasets: list, dataset_ids: list, dataset_names: list):
         self.datasets = datasets
-        self.names = names
+        self.dataset_ids = dataset_ids
+        self.dataset_names = dataset_names
 
         lens = [len(dataset) for dataset in self.datasets]
         self.cumsum = np.cumsum(lens, dtype=np.int)
 
     def __getitem__(self, index: int) -> dict:
-        dataset, name, index = self.idx2dataset(index)
+        dataset, dataset_id, dataset_name, index = self.idx2dataset(index)
         sample = dataset[index]
-        sample["dataset_name"] = name
+        sample["dataset_id"] = dataset_id
+        sample["dataset_name"] = dataset_name
 
         return sample
 
@@ -33,7 +35,10 @@ class MultiTaskDataset(Dataset):
                 break
             prev_sum = s
 
-        return self.datasets[dataset_idx], self.names[dataset_idx], result_index
+        dataset = self.datasets[dataset_idx]
+        dataset_id = self.dataset_ids[dataset_idx]
+        dataset_name = self.dataset_names[dataset_idx]
+        return dataset, dataset_id, dataset_name, result_index
 
 
 class MultiTaskSampler(torch.utils.data.sampler.Sampler):
