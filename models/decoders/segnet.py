@@ -1,46 +1,24 @@
 from torch import nn
 
-from models.encoders import get_encoder
-from models.modules import SegmentationHead, ClassificationHead
+from models.base_models import EncoderDecoder
 from models.utils import get_layers_by_dim
-from .base import BaseDecoder, SegmentationModel
+from .base_decoder import BaseDecoder
 
 
-class SegNet(SegmentationModel):
+class SegNet(EncoderDecoder):
     def __init__(
         self,
         encoder_name: str,
         n_dim: int,
         in_channels: int,
-        classes: int,
-        classification_params=None,
     ):
-        super().__init__()
+        super().__init__(encoder_name, n_dim, in_channels)
 
-        self.encoder = get_encoder(
-            encoder_name=encoder_name, n_dim=n_dim, num_channels=in_channels
-        )
         self.decoder = SegNetDecoder(
             in_channels=self.encoder.out_channels[-1],
             out_channels=32,
             n_dim=n_dim,
         )
-        self.segmentation_head = SegmentationHead(
-            in_channels=32,
-            out_channels=classes,
-            n_dim=n_dim,
-            kernel_size=3,
-            upsampling=1,
-        )
-
-        if classification_params is not None:
-            self.classification_head = ClassificationHead(
-                in_channels=self.encoder.out_channels[-1],
-                n_dim=n_dim,
-                **classification_params,
-            )
-        else:
-            self.classification_head = None
 
 
 def upsample_conv_bn_relu(in_channels, out_channels, n_dim=2):
@@ -60,7 +38,7 @@ def upsample_conv_bn_relu(in_channels, out_channels, n_dim=2):
 
 class SegNetDecoder(BaseDecoder):
     def __init__(self, in_channels, out_channels, n_dim=2):
-        super().__init__()
+        super().__init__(out_channels)
 
         layers = get_layers_by_dim(n_dim=n_dim)
         Conv = layers["conv"]

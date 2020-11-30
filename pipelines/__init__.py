@@ -2,10 +2,11 @@ from pytorch_lightning import callbacks as cb
 
 from utils import dict_remove_key
 from .callbacks import EarlyStopping
+from .multi_task_segmentator import MultiTaskSegmentator
 from .segmentator import Segmentator
 
 available_pipelines = {
-    "segmentation": Segmentator,
+    "multi_task_segmentation": MultiTaskSegmentator,
 }
 
 available_callbacks = {

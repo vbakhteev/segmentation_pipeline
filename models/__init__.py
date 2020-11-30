@@ -1,14 +1,14 @@
 import segmentation_models_pytorch as smp
-from torch import nn
 
 from utils import dict_remove_key, object_from_dict
+from .base_models import MultiHeadSegmentator
 from .criterions import get_criterion
 from .decoders import SegNet
 from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
+from .modules import get_classification_head, get_segmentation_head
 
 __all__ = [
-    "get_model",
     "get_optimizer",
     "get_scheduler",
     "get_metrics",
@@ -32,18 +32,16 @@ available_models_segmentation = {"SegNet": SegNet}
 segmentation_metrics = {"intersection_over_union": intersection_over_union}
 
 
-def get_model(name: str, model_type: str, params: dict, n_dim: int) -> nn.Module:
-    assert model_type in ("segmentation",)
+def get_segmentation_model(model_cfg):
+    name = model_cfg.name
+    n_dim = model_cfg.n_dim
+    params = model_cfg.params
 
-    if model_type == "segmentation":
-        return get_segmentation_model(name=name, params=params, n_dim=n_dim)
-
-    else:
-        raise KeyError(f"Model type {model_type} is not supported")
-
-
-def get_segmentation_model(name: str, params: dict, n_dim: int):
-    if n_dim == 2 and name in available_2d_models_segmentation:
+    # if n_dim == 2 and name in available_2d_models_segmentation:
+    if False:
+        # TODO add multi-classification support
+        # TODO add multi-segmentation support
+        # Do it by class-wrapper
         model = available_2d_models_segmentation[name](**params)
 
     elif name in available_models_segmentation:
@@ -52,16 +50,12 @@ def get_segmentation_model(name: str, params: dict, n_dim: int):
     else:
         raise KeyError(f"Segmentation model {name} is not supported for {n_dim}D")
 
-    return BaseModel(model)
-
-
-class BaseModel(nn.Module):
-    def __init__(self, model):
-        super(BaseModel, self).__init__()
-        self.model = model
-
-    def forward(self, batch):
-        return self.model(batch["image"])
+    return MultiHeadSegmentator(
+        model=model,
+        n_dim=n_dim,
+        seg_heads_cfgs=model_cfg.segmentation.heads,
+        clf_heads_cfgs=model_cfg.classification.heads,
+    )
 
 
 def get_optimizer(params, cfg_optimizer):
@@ -72,10 +66,10 @@ def get_scheduler(optimizer, cfg_scheduler):
     return object_from_dict(cfg_scheduler, optimizer=optimizer)
 
 
-def get_metrics(cfg_metrics: list) -> dict:
+def get_metrics(cfg_metrics: list, prefix="") -> dict:
     metrics_ = dict()
     for cfg_metric in cfg_metrics:
-        metrics_[cfg_metric.name] = get_metric(cfg_metric)
+        metrics_[prefix + cfg_metric.name] = get_metric(cfg_metric)
 
     return metrics_
 

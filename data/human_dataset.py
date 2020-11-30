@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Iterable, Callable, Union
 
 import cv2
+import torch
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 from .base_dataset import BaseDataset
@@ -41,9 +43,11 @@ class HumanDataset(BaseDataset):
 
         sample = self.transforms(image=image, mask=mask)
         image = sample["image"]
-        mask = sample["mask"][0]
+        mask = sample["mask"].type(torch.int64)
 
-        return {"image": image, "mask": mask}
+        area = mask.sum() / np.prod(mask.shape)
+
+        return {"image": image, "mask_human": mask, "area": torch.tensor([area])}
 
     def _len(self):
         return len(self.imgs_paths)

@@ -34,6 +34,20 @@ datasets:
 
       post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
+    - id: 1
+      name: faces
+      root: '/Users/vladbahteev/FASSEG-repository'
+      use_to_train: True
+      use_to_validate: False
+
+      pre_transforms: [ ]
+      augmentations:
+        - name: HorizontalFlip
+        - name: ShiftScaleRotate
+          shift_limit: 0.05
+          p: 1
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+
 
 dataloader:
   num_workers: 0
@@ -47,10 +61,65 @@ dataloader:
 model:
   name: 'SegNet'
   n_dim: 2
-  pipeline: 'segmentation'      # [segmentation]
-  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 2}
+  pipeline: 'multi_task_segmentation'      # [segmentation]
+  params: {'encoder_name': 'resnet18', 'in_channels': 3}
 
-criterion: [{'cls': 'pytorch_toolbelt.losses.SoftCrossEntropyLoss', 'smooth_factor': 0.1}]
+  # Also works for regression
+  classification:
+    default_criterion:
+      cls: 'torch.nn.BCEWithLogitsLoss'
+
+    heads:
+      - datasets_ids: [0]     # first head will be used for these datasets
+        target: 'area'
+
+        # Optional parameter, takes default_criterion if not specified
+        criterion:
+          cls: 'torch.nn.MSELoss'
+
+        metrics: []
+
+        head: 'multi_layer'   # [linear | multi_layer]
+        params:
+          classes: 1
+
+          layer_sizes: [128]
+          activation: 'torch.nn.ReLU'
+          activation_params: {'inplace': True}
+
+
+  segmentation:
+    default_criterion:
+      cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+      smooth_factor: 0.1
+
+    heads:
+      - datasets_ids: [0]
+        target: 'mask_human'
+
+        # In lightning module metrics will have name {target}_{metric_name}
+        metrics: [
+          { 'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5 },
+        ]
+
+        head: 'conv_upsample'
+        params:
+          classes: 2
+
+          kernel_size: 3
+
+      - datasets_ids: [1]
+        target: 'mask_face'
+
+#        metrics: [
+#          { 'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5 },
+#        ]
+
+        head: 'conv_upsample'
+        params:
+          classes: 4
+
+          kernel_size: 3
 
 
 optimizer: [{
@@ -69,16 +138,13 @@ scheduler: [{
 ########################################################
 
 callbacks: [
-  {'name': 'ModelCheckpoint', 'monitor': 'intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_human@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
   {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
   name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]
   params: {}
-  metrics: [
-    {'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5}
-  ]
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
