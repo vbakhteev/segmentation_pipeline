@@ -3,7 +3,7 @@ import importlib
 import cv2
 import jpeg4py
 
-from .base_dataset import BaseDataset
+from data.heplers.base_dataset import BaseDataset
 
 
 def find_dataset_using_name(dataset_name: str):

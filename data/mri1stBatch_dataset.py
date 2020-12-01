@@ -4,7 +4,7 @@ from typing import Union, Callable
 import cv2
 from sklearn.model_selection import train_test_split
 
-from data.base_dataset import BaseDataset
+from data.heplers.base_dataset import BaseDataset
 
 
 class Mri1stBatchDataset(BaseDataset):

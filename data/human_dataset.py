@@ -6,8 +6,8 @@ import torch
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from .base_dataset import BaseDataset
-from .utils import read_2d_img_cv2
+from data.heplers.base_dataset import BaseDataset
+from data.heplers.utils import read_2d_img_cv2
 
 
 class HumanDataset(BaseDataset):

@@ -1,8 +1,7 @@
 from torch import nn
 
-from models.base_models import EncoderDecoder
 from models.utils import get_layers_by_dim
-from .base_decoder import BaseDecoder
+from .base_decoder import BaseDecoder, EncoderDecoder
 
 
 class SegNet(EncoderDecoder):

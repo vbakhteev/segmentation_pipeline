@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import torch
 
-from .base_dataset import BaseDataset
+from data.heplers.base_dataset import BaseDataset
 
 
 class FacesDataset(BaseDataset):
