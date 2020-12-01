@@ -61,7 +61,7 @@ dataloader:
 model:
   name: 'SegNet'
   n_dim: 2
-  pipeline: 'multi_task_segmentation'      # [segmentation]
+  pipeline: 'multi_task_segmentation'
   params: {'encoder_name': 'resnet18', 'in_channels': 3}
 
   # Also works for regression
@@ -153,17 +153,26 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - name: res-128
+  - name: res-64
     lightning:
       max_epochs: 2
 
-  - name: res-256
+  - name: res-64
     lightning:
       max_epochs: 2
 
     optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0001}]
 
+    model:
+      segmentation:
+        heads:
+          - target: 'mask_human'
+            criterion:
+              cls: 'pytorch_toolbelt.losses.DiceLoss'
+              mode: 'multiclass'
+
+
     datasets:
       list:
         - id: 0
-          post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
+          post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
