@@ -3,6 +3,9 @@ import random
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.dataloader import default_collate
+
+from utils import dict_remove_key
 
 
 class MultiTaskDataset(Dataset):
@@ -17,8 +20,9 @@ class MultiTaskDataset(Dataset):
     def __getitem__(self, index: int) -> dict:
         dataset, dataset_id, dataset_name, index = self.idx2dataset(index)
         sample = dataset[index]
+
         sample["dataset_id"] = dataset_id
-        sample["dataset_name"] = dataset_name
+        # sample["dataset_name"] = dataset_name
 
         return sample
 
@@ -39,6 +43,21 @@ class MultiTaskDataset(Dataset):
         dataset_id = self.dataset_ids[dataset_idx]
         dataset_name = self.dataset_names[dataset_idx]
         return dataset, dataset_id, dataset_name, result_index
+
+
+class SingleTaskDataset(Dataset):
+    def __init__(self, dataset: Dataset, dataset_id, dataset_name: str):
+        self.dataset = dataset
+        self.dataset_id = dataset_id
+        self.dataset_name = dataset_name
+
+    def __getitem__(self, index: int) -> dict:
+        sample = self.dataset[index]
+        sample["dataset_id"] = self.dataset_id
+        return sample
+
+    def __len__(self):
+        return len(self.dataset)
 
 
 class MultiTaskSampler(torch.utils.data.sampler.Sampler):
@@ -65,3 +84,13 @@ class MultiTaskSampler(torch.utils.data.sampler.Sampler):
 
     def __len__(self):
         return self.num_samples
+
+
+def multi_task_collate_fn(batch):
+    dataset_id = batch[0]["dataset_id"]
+    batch = [dict_remove_key(b, "dataset_id") for b in batch]
+
+    batch = default_collate(batch)
+    batch["dataset_id"] = dataset_id
+
+    return batch

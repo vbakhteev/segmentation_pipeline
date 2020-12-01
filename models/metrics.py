@@ -19,7 +19,7 @@ class BaseSegmentationMetric(pl.metrics.Metric):
     def __init__(
         self,
         metric_fn: Callable,
-        mode: str,
+        num_classes: int,
         compute_on_step=True,
         dist_sync_on_step=False,
         threshold=0.5,
@@ -28,10 +28,8 @@ class BaseSegmentationMetric(pl.metrics.Metric):
             compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step
         )
 
-        assert mode in ("binary", "multiclass")
-
+        self.num_classes = num_classes
         self.metric_fn = metric_fn
-        self.mode = mode
         self.threshold = threshold
 
         self.add_state("scores_sum", default=torch.tensor(0.0), dist_reduce_fx="sum")
@@ -48,25 +46,25 @@ class BaseSegmentationMetric(pl.metrics.Metric):
         return self.scores_sum / self.total
 
     def _input_format(self, preds, target):
-        if self.mode == "binary":
+        if self.num_classes <= 2:
             preds = preds.softmax(dim=1)
             preds = (preds[:, 1] > self.threshold).unsqueeze(1)
 
-        elif self.mode == "multiclass":
+        elif self.num_classes > 2:
             preds = preds.argmax(dim=1)
+            target = target.squeeze(1)
 
-        preds = ohe_tensor(preds.long())
-        target = ohe_tensor(target.long())
+        preds = ohe_tensor(preds.long(), self.num_classes)
+        target = ohe_tensor(target.long(), self.num_classes)
 
         return preds, target
 
 
-def ohe_tensor(tensor):
+def ohe_tensor(tensor, num_classes):
     size = tensor.shape
     values = tensor.reshape(-1)
-    n_values = torch.max(values) + 1
-    ohe = torch.eye(n_values)[values]
-    ohe = ohe.reshape(*size, n_values)
+    ohe = torch.eye(num_classes)[values]
+    ohe = ohe.reshape(*size, num_classes)
 
     return ohe
 
