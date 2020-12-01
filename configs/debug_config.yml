@@ -32,7 +32,7 @@ datasets:
           shift_limit: 0.05
           p: 1
 
-      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
 
     - id: 1
       name: faces
@@ -46,7 +46,7 @@ datasets:
         - name: ShiftScaleRotate
           shift_limit: 0.05
           p: 1
-      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
@@ -99,7 +99,7 @@ model:
 
         # In lightning module metrics will have name {target}_{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5 },
+          { 'name': 'intersection_over_union', 'num_classes': 2, 'threshold': 0.5 },
         ]
 
         head: 'conv_upsample'
@@ -112,7 +112,7 @@ model:
         target: 'mask_face'
 
 #        metrics: [
-#          { 'name': 'intersection_over_union', 'mode': 'binary', 'threshold': 0.5 },
+#          { 'name': 'intersection_over_union', 'num_classes': 4},
 #        ]
 
         head: 'conv_upsample'

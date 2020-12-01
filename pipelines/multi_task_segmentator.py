@@ -45,7 +45,7 @@ class MultiTaskSegmentator(BasePipeline):
         image = batch["image"]
         model_outputs = self.model(image)
 
-        dataset_id = batch["dataset_id"][0].item()
+        dataset_id = batch["dataset_id"]
         losses, targets = dict(), dict()
 
         for target_name in batch.keys():
