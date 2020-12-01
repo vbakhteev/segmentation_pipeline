@@ -5,14 +5,12 @@ import torch
 
 from data import get_dataloader
 from models import (
-    get_criterion,
-    get_metrics,
     get_optimizer,
     get_scheduler,
 )
 
 
-class BaseSingleModel(pl.LightningModule):
+class BasePipeline(pl.LightningModule):
     """Parent class for pipelines with single model, dataset, optimizer, scheduler"""
 
     def __init__(self, experiment):
@@ -27,19 +25,17 @@ class BaseSingleModel(pl.LightningModule):
         self.setup_logging()
 
     def setup_logging(self):
-        logging_metrics = get_metrics(self.cfg.logging.metrics)
-        self.logging_names = list(logging_metrics.keys())
-        for name, metric in logging_metrics.items():
-            setattr(self, name, metric)
-        self.logged_metrics = {
-            k: [] for k in ["train_loss"] + list(logging_metrics.keys())
-        }
+        raise NotImplementedError
 
     def update_config(self, cfg):
         self.cfg = copy.deepcopy(cfg)
         self.hparams = dict(cfg=self.cfg)
 
-        self.criterion = get_criterion(self.cfg.criterion[0])
+        self.update_criterion()
+
+    def update_criterion(self):
+        self.criterion = None
+        raise NotImplementedError
 
     def forward(self, input_):
         return self.model(input_)
@@ -54,12 +50,6 @@ class BaseSingleModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         raise NotImplementedError
-        # self.log("valid_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        #
-        # for metric_name in self.logging_names:
-        #     metric_o = getattr(self, metric_name)
-        #     score = metric_o(logits, target)
-        #     self.log(metric_name, score, on_step=False, on_epoch=True, prog_bar=True)
 
     def validation_epoch_end(self, outputs: list):
         for metric_name in self.logging_names:

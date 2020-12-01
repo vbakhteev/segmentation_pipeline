@@ -4,7 +4,7 @@ import numpy as np
 import albumentations as albu
 from albumentations.pytorch import ToTensor, ToTensorV2
 
-from .functional_transforms import resize_mask3d, resize_img3d
+from data.heplers.functional_transforms import resize_mask3d, resize_img3d
 
 
 def get_transforms(dataset_cfg):

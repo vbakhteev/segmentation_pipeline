@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 from sklearn.model_selection import train_test_split
 
-from .base_dataset import BaseDataset
+from data.heplers.base_dataset import BaseDataset
 
 
 class HippocampusDataset(BaseDataset):

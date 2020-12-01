@@ -10,20 +10,25 @@
 See our template dataset class 'human_dataset.py' for more details.
 """
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union, Iterable
 
 from torch.utils.data import DataLoader
 
-from data.transforms import get_transforms
-from .multitask_dataset import MultiTaskDataset, MultiTaskSampler
-from .utils import find_dataset_using_name
+from data.heplers.transforms import get_transforms
+from data.heplers.multitask_dataset import (
+    MultiTaskDataset,
+    MultiTaskSampler,
+    SingleTaskDataset,
+    multi_task_collate_fn,
+)
+from data.heplers.utils import find_dataset_using_name
 
 
 def get_dataloader(
     cfg,
     stage: str,
     transforms_: Optional[Callable] = None,
-) -> DataLoader:
+) -> Union[DataLoader, Iterable[DataLoader]]:
     if stage not in ("train", "valid", "test"):
         raise KeyError(f"{stage} dataloader not is not supported")
 
@@ -35,19 +40,39 @@ def get_dataloader(
         is_train=is_train,
         transforms_=transforms_,
     )
-    dataset = MultiTaskDataset(datasets, dataset_ids, dataset_names)
-    sampler = MultiTaskSampler(dataset, cfg.dataloader.batch_size)
 
-    # len(loader) = steps_per_epoch * len(datasets)
-    loader = DataLoader(
-        dataset,
-        drop_last=is_train,
-        sampler=sampler if is_train else None,
-        collate_fn=None,
-        **cfg.dataloader,  # num_workers,batch_size,pin_memory
-    )
+    if is_train:
+        dataset = MultiTaskDataset(datasets, dataset_ids, dataset_names)
+        sampler = MultiTaskSampler(dataset, cfg.dataloader.batch_size)
 
-    return loader
+        # len(loader) = steps_per_epoch * len(datasets)
+        loader = DataLoader(
+            dataset,
+            drop_last=True,
+            sampler=sampler,
+            collate_fn=multi_task_collate_fn,
+            **cfg.dataloader,  # num_workers,batch_size,pin_memory
+        )
+        return loader
+
+    else:
+        loaders = []
+
+        for dataset, dataset_id, dataset_name in zip(
+            datasets, dataset_ids, dataset_names
+        ):
+            dataset = SingleTaskDataset(dataset, dataset_id, dataset_name)
+
+            loader = DataLoader(
+                dataset,
+                drop_last=False,
+                sampler=None,
+                collate_fn=multi_task_collate_fn,
+                **cfg.dataloader,  # num_workers,batch_size,pin_memory
+            )
+            loaders += [loader]
+
+        return loaders
 
 
 def get_samples_per_epoch(cfg):
