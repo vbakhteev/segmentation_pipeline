@@ -70,7 +70,7 @@ Config to create model. May be dependent on task (classification, segmentation, 
 
 This documentation considers segmentation task.
 
-**Warning**: Number of classes always must be >=2. In binary segmentation case it is equal 2. 
+<span style="color:red">**Warning**</span>: Number of classes always must be >=2. In binary segmentation case it is equal 2. 
 
 ##### `name` - name of model
 ##### `n_dim` - number of dimensions of model and input data.
