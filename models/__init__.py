@@ -3,7 +3,7 @@ import segmentation_models_pytorch as smp
 from utils import dict_remove_key, object_from_dict
 from .base_models import MultiHeadSegmentator
 from .criterions import get_criterion
-from .decoders import SegNet
+from .decoders import SegNet, EncoderDecoderSMP
 from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
 from .modules import get_classification_head, get_segmentation_head
@@ -37,12 +37,9 @@ def get_segmentation_model(model_cfg):
     n_dim = model_cfg.n_dim
     params = model_cfg.params
 
-    # if n_dim == 2 and name in available_2d_models_segmentation:
-    if False:
-        # TODO add multi-classification support
-        # TODO add multi-segmentation support
-        # Do it by class-wrapper
+    if n_dim == 2 and name in available_2d_models_segmentation:
         model = available_2d_models_segmentation[name](**params)
+        model = EncoderDecoderSMP(model)
 
     elif name in available_models_segmentation:
         model = available_models_segmentation[name](n_dim=n_dim, **params)
