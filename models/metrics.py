@@ -48,7 +48,7 @@ class BaseSegmentationMetric(pl.metrics.Metric):
     def _input_format(self, preds, target):
         if self.num_classes <= 2:
             preds = preds.softmax(dim=1)
-            preds = (preds[:, 1] > self.threshold).unsqueeze(1)
+            preds = preds[:, 1] > self.threshold
 
         elif self.num_classes > 2:
             preds = preds.argmax(dim=1)

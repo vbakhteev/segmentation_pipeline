@@ -168,9 +168,7 @@ train_stages:
         heads:
           - target: 'mask_human'
             criterion:
-              cls: 'pytorch_toolbelt.losses.DiceLoss'
-              mode: 'multiclass'
-
+              cls: 'pytorch_toolbelt.losses.FocalLoss'
 
     datasets:
       list:

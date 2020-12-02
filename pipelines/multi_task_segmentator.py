@@ -58,6 +58,9 @@ class MultiTaskSegmentator(BasePipeline):
             criterion_key = (dataset_id, target_name)
             criterion = self.criterion[criterion_key]
 
+            if target.size(1) == 1:
+                target = target.squeeze(1)
+
             loss = criterion(preds, target)
 
             losses[criterion_key] = loss
