@@ -49,6 +49,9 @@ def get_albu_object(name, *args, **kwargs):
         cls_path = "albumentations." + name
         cls = pydoc.locate(cls_path)
 
+    if cls is None:
+        raise KeyError(f"Transform {name} is not supported")
+
     return cls(*args, **kwargs)
 
 
