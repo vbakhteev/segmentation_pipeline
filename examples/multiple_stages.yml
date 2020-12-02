@@ -14,17 +14,19 @@ datasets:
   steps_per_epoch: 10
 
   list:
-    - id: 0     # Used to identify dataset in training stages
-      name: human                        # Used to get NameDataset from data/name_dataset.py
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+    - id: 0
+      name: faces
+      root: '/Users/vladbahteev/FASSEG-repository'
       use_to_train: True
       use_to_validate: True
 
-      pre_transforms: []
+      pre_transforms: [ ]
       augmentations:
         - name: HorizontalFlip
         - name: ShiftScaleRotate
-      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+          shift_limit: 0.05
+          p: 1
+      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
 
 
 
@@ -38,12 +40,32 @@ dataloader:
 ########################################################
 
 model:
-  name: 'Unet'
+  name: 'SegNet'
   n_dim: 2
-  pipeline: 'segmentation'      # [segmentation]
-  params: {'encoder_name': 'resnet18', 'in_channels': 3, 'classes': 1}
+  pipeline: 'multi_task_segmentation'
+  params: {'encoder_name': 'resnet18', 'in_channels': 3}
 
-criterion: [{ 'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3 }]
+  segmentation:
+    heads:
+      - datasets_ids: [0]
+        target: 'mask_face'
+
+        criterion:
+          cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+          smooth_factor: 0.1
+
+        # In lightning module metrics will have name {target}_{metric_name}
+        metrics: [
+          { 'name': 'intersection_over_union', 'num_classes': 4, 'threshold': 0.5 },
+        ]
+
+        head: 'conv_upsample'
+        params:
+          classes: 4
+
+  classification:
+    heads: []
+
 
 optimizer: [{'cls': 'torch.optim.Adam', 'lr': 0.001}]
 
@@ -58,16 +80,13 @@ scheduler: [{
 ########################################################
 
 callbacks: [
-  {'name': 'ModelCheckpoint', 'monitor': 'intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_face@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
   {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
   name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]
   params: {}
-  metrics: [
-    {'name': 'intersection_over_union', 'threshold': 0.5}
-  ]
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
@@ -78,7 +97,7 @@ lightning:
 train_stages:
   - name: res-128-pretraining
     lightning:
-      max_epochs: 2
+      max_epochs: 1
 
 
   - name: res-256-training
@@ -109,13 +128,20 @@ train_stages:
           ]
 
     # Change loss function
-    criterion: [ {
-      'cls': 'pytorch_toolbelt.losses.JointLoss',
-      'first_weight': 1.0,
-      'second_weight': 2.0,
-      'first': { 'cls': 'pytorch_toolbelt.losses.DiceLoss', 'mode': 'binary' },
-      'second': { 'cls': 'pytorch_toolbelt.losses.FocalLoss', 'gamma': 3 }
-    } ]
+    model:
+      segmentation:
+        heads:
+          - target: 'mask_face'
+            criterion:
+              cls: 'pytorch_toolbelt.losses.JointLoss'
+              first_weight: 1.0
+              second_weight: 2.0
+              first:
+                cls: 'pytorch_toolbelt.losses.DiceLoss'
+                mode: 'multiclass'
+              second:
+                cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+                smooth_factor: 0.1
 
 
   - name: fine-tuning
@@ -123,7 +149,7 @@ train_stages:
       max_epochs: 2
 
     # SGD more accurate at last steps
-    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 1e-4}]
+    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0001}]
 
     # Change to less aggressive scheduler
     scheduler: [{'cls': 'torch.optim.lr_scheduler.ReduceLROnPlateau', 'factor': 0.2, 'patience': 3}]

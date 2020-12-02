@@ -31,7 +31,7 @@ class MultiTaskSegmentator(BasePipeline):
         self.criterion = {}
         for task in ("classification", "segmentation"):
             task_cfg = self.cfg.model.get(task)
-            default_criterion_cfg = task_cfg.default_criterion
+            default_criterion_cfg = task_cfg.get("default_criterion", None)
 
             for head_cfg in task_cfg.heads:
                 criterion_cfg = head_cfg.get("criterion", None) or default_criterion_cfg

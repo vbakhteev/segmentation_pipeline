@@ -2,7 +2,7 @@ defaults:
   seed: 0
 
 # specifics about experiment that will be logged to telegram
-description: "Train segmentation model simultaneously on 128x128 and 256x256 images"
+description: "Multi head segmentation"
 
 
 ########################################################
@@ -14,32 +14,39 @@ datasets:
   steps_per_epoch: 10
 
   list:
-    - id: 0     # Used to identify dataset in training stages
-      name: human
+    - id: 0
+      name: human                        # Used to get NameDataset from data/name_dataset.py
       root: '/Users/vladbahteev/Human-Segmentation-Dataset'
       use_to_train: True
-      use_to_validate: False    # Don't use 128x128 images for validation
+      use_to_validate: True
 
       pre_transforms: []
+
       augmentations:
-        - name: HorizontalFlip
-        - name: ShiftScaleRotate
-      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
-
-    - id: 1
-      name: human
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
-      use_to_train: True
-      use_to_validate: True     # Use 256x256 images for validation
-
-      pre_transforms: []
-      augmentations:    # Use different augmentations for 256x256 images for any reason
         - name: OneOf
           list:
             - name: GaussNoise
             - name: Blur
         - name: HorizontalFlip
-      post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
+        - name: ShiftScaleRotate
+          shift_limit: 0.05
+          p: 1
+
+      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
+
+    - id: 1
+      name: faces
+      root: '/Users/vladbahteev/FASSEG-repository'
+      use_to_train: True
+      use_to_validate: False
+
+      pre_transforms: [ ]
+      augmentations:
+        - name: HorizontalFlip
+        - name: ShiftScaleRotate
+          shift_limit: 0.05
+          p: 1
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
@@ -57,14 +64,38 @@ model:
   pipeline: 'multi_task_segmentation'
   params: {'encoder_name': 'resnet18', 'in_channels': 3}
 
-  segmentation:
-    heads:
-      - datasets_ids: [0,1]
-        target: 'mask_human'
+  # Also works for regression
+  classification:
+    default_criterion:
+      cls: 'torch.nn.BCEWithLogitsLoss'
 
+    heads:
+      - datasets_ids: [0]     # first head will be used for these datasets
+        target: 'area'
+
+        # Optional parameter, takes default_criterion if not specified
         criterion:
-          cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
-          smooth_factor: 0.1
+          cls: 'torch.nn.MSELoss'
+
+        metrics: []
+
+        head: 'multi_layer'   # [linear | multi_layer]
+        params:
+          classes: 1
+
+          layer_sizes: [128]
+          activation: 'torch.nn.ReLU'
+          activation_params: {'inplace': True}
+
+
+  segmentation:
+    default_criterion:
+      cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+      smooth_factor: 0.1
+
+    heads:
+      - datasets_ids: [0]
+        target: 'mask_human'
 
         # In lightning module metrics will have name {target}_{metric_name}
         metrics: [
@@ -75,11 +106,18 @@ model:
         params:
           classes: 2
 
-  classification:
-    heads: []
+      - datasets_ids: [1]
+        target: 'mask_face'
+
+        head: 'conv_upsample'
+        params:
+          classes: 4
 
 
-optimizer: [{'cls': 'torch.optim.Adam', 'lr': 0.001}]
+optimizer: [{
+  'cls': 'torch.optim.Adam',
+  'lr': 0.001
+}]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
