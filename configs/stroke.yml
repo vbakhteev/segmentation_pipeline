@@ -1,0 +1,107 @@
+defaults:
+  seed: 0
+
+# specifics about experiment that will be logged to telegram
+description: "Baseline 2d segmentaion of stroke"
+
+
+########################################################
+################### Dataset settings ###################
+########################################################
+
+datasets:
+  # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
+  steps_per_epoch: 3
+
+  list:
+    - id: 0
+      name: mri_stroke
+      root: '/home/vladislav/data/MKDC_stroke_CT_MRI/1stBatchWithMasks'
+      use_to_train: True
+      use_to_validate: True
+
+      pre_transforms: []
+
+      augmentations:
+        - name: HorizontalFlip
+
+      post_transforms:
+        - name: Resize
+          height: 256
+          width: 256
+        - name: 'ToTensorV2'
+
+
+dataloader:
+  num_workers: 5
+  batch_size: 10
+  pin_memory: True
+
+########################################################
+#################### Model settings ####################
+########################################################
+
+model:
+  name: 'Unet'
+  n_dim: 2
+  pipeline: 'multi_task_segmentation'
+  params: {'encoder_name': 'resnet18', 'in_channels': 1}
+
+  # Also works for regression
+  classification:
+    heads: []
+
+
+  segmentation:
+    default_criterion:
+      cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+      smooth_factor: 0.1
+
+    heads:
+      - datasets_ids: [0]
+        target: 'mask'
+
+        # In lightning module metrics will have name {target}_{metric_name}
+        metrics: [
+          { 'name': 'intersection_over_union', 'num_classes': 2, 'threshold': 0.5 },
+        ]
+
+        head: 'conv_upsample'
+        params:
+          classes: 2
+
+
+optimizer: [{
+  'cls': 'torch.optim.Adam',
+  'lr': 0.001
+}]
+
+# For some schedulers, you need to rewrite the place where it is called
+scheduler: [{
+  'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
+  'T_0': 2, 'T_mult': 2
+}]
+
+########################################################
+################## Training settings ###################
+########################################################
+
+callbacks: [
+  {'name': 'ModelCheckpoint', 'monitor': 'mask@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
+  ]
+
+logging:
+  name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]
+  params: {}
+
+# You can add any argument for pytorch_lightning.Trainer
+lightning:
+  gpus: 1
+  num_nodes: 1
+
+# Parameters defined in stages are used to update fields defined above
+train_stages:
+  - name: training
+    lightning:
+      max_epochs: 10

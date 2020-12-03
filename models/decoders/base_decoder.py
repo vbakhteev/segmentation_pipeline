@@ -39,9 +39,17 @@ class EncoderDecoderSMP(nn.Module):
 
         self.encoder = model.encoder
         self.decoder = model.decoder
+        self.decoder.out_channels = self.get_decoder_out_channels()
 
-        _, decoder_output = self.forward(torch.zeros((1, 3, 64, 64)))
-        self.decoder.out_channels = decoder_output.shape[1]
+    def get_decoder_out_channels(self):
+        for module in self.encoder.modules():
+            if isinstance(module, nn.Conv2d):
+                break
+        in_channels = module.in_channels
+
+        mock_tensor = torch.zeros((1, in_channels, 64, 64))
+        _, decoder_output = self.forward(mock_tensor)
+        return decoder_output.shape[1]
 
     def forward(self, x):
         encoder_features = self.encoder(x)

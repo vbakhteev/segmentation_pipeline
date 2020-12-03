@@ -2,12 +2,14 @@ from pathlib import Path
 from typing import Union, Callable
 
 import cv2
+import torch
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 from data.heplers.base_dataset import BaseDataset
 
 
-class Mri1stBatchDataset(BaseDataset):
+class MRIStrokeDataset(BaseDataset):
     """
     Data resides here: /mercurySOFS/Medical/MKDC_stroke_CT_MRI/1stBatchWithMasks
     """
@@ -22,9 +24,9 @@ class Mri1stBatchDataset(BaseDataset):
     ):
         super().__init__(root, samples_per_epoch, transforms, is_train)
         self.paths = []
-        for name in self.root.iterdir():
-            if name.stem in patient_names:
-                self.paths.extend(self.read_patient(name))
+        for patient_path in self.root.iterdir():
+            if patient_path.stem in patient_names:
+                self.paths.extend(self.read_patient(patient_path))
 
     def _len(self):
         return len(self.paths)
@@ -35,12 +37,14 @@ class Mri1stBatchDataset(BaseDataset):
         mask (tensor) -- corresponding mask
         """
         img_path, mask_path = self.paths[index]
-        image = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)[..., np.newaxis]
         mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+        if mask.max() == 255:
+            mask = mask / 255
 
         sample = self.transforms(image=image, mask=mask)
-        image = sample["image"]
-        mask = sample["mask"]
+        image = sample["image"].type(torch.float)
+        mask = sample["mask"].type(torch.int64)
 
         return {"image": image, "mask": mask}
 
@@ -63,14 +67,15 @@ class Mri1stBatchDataset(BaseDataset):
         return result
 
     @staticmethod
-    def read_patient(root):
-        root = Path(root)
-        mask_dir = root / "masks"
-        img_dir = next(root.glob("*DWI*"))
+    def read_patient(patient_path):
+        mask_dir = patient_path / "masks"
+        img_dir = next(patient_path.glob("*DWI*"))
         filenames = mask_dir.glob("*.png")
+
         ret = []
         for name in filenames:
             img_path = img_dir / name.name
             mask_path = name
-            ret.append((img_path, mask_path))
+            ret += [(img_path, mask_path)]
+
         return ret

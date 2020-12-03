@@ -19,9 +19,8 @@ def parse_args():
         "--checkpoints_dir", type=str, default=None, help="models are saved here"
     )
     parser.add_argument(
-        "--tg_logging",
-        type=bool,
-        default=True,
+        "--no_tg",
+        action="store_true",
         help="send train information to telegram after training",
     )
 
@@ -39,9 +38,9 @@ def setup_experiment():
     set_deterministic(cfg.defaults.seed)
 
     if args.debug:
-        args.tg_logging = False
+        args.no_tg = True
 
-    if args.tg_logging:
+    if not args.no_tg:
         tg_logger = TelegramLogger()
         experiment["tg_logger"] = tg_logger
 
