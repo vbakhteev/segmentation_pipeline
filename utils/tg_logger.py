@@ -23,7 +23,6 @@ def log_to_tg(model, experiment, checkpoint_callback):
             )
         tg_logger.send_message(message)
 
-        # TODO get validation loss
         metrics = model.logged_metrics
         if len(metrics):
             img = metrics_to_image(metrics)
