@@ -157,7 +157,7 @@ train_stages:
     lightning:
       max_epochs: 2
 
-  - name: res-64
+  - name: res-128
     lightning:
       max_epochs: 2
 

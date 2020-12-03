@@ -24,7 +24,9 @@ class MultiTaskSegmentator(BasePipeline):
                 for name, metric in logging_metrics.items():
                     setattr(self, name, metric)
 
-        self.logged_metrics = {k: [] for k in ["train_loss"] + self.logging_names}
+        self.logged_metrics = {
+            k: [] for k in ["train_loss", "valid_loss"] + self.logging_names
+        }
 
     def update_criterion(self):
         # (dataset_id, target) -> criterion
@@ -78,6 +80,10 @@ class MultiTaskSegmentator(BasePipeline):
     def validation_step(self, batch, batch_idx):
         loss, losses, model_outputs, targets = self.one_pass(batch)
         self.log("valid_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        if batch_idx == 0:
+            self.logged_metrics["valid_loss"].append([])
+        else:
+            self.logged_metrics["valid_loss"][-1] += [loss.item()]
 
         for metric_name in self.logging_names:
             target_name = metric_name.split("@")[0]
