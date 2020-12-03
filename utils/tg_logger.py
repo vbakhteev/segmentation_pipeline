@@ -6,6 +6,29 @@ import cv2
 import numpy as np
 import requests
 
+from .visualization import metrics_to_image
+
+
+def log_to_tg(model, experiment, checkpoint_callback):
+    args, cfg = experiment["args"], experiment["cfg"]
+
+    if not args.no_tg:
+        tg_logger = experiment["tg_logger"]
+
+        message = "{}\nExperiment {}".format(cfg.description, args.checkpoints_dir)
+        if checkpoint_callback is not None:
+            message += "\nBest {}: {:.4f}".format(
+                checkpoint_callback.monitor,
+                checkpoint_callback.best_model_score,
+            )
+        tg_logger.send_message(message)
+
+        # TODO get validation loss
+        metrics = model.logged_metrics
+        if len(metrics):
+            img = metrics_to_image(metrics)
+            tg_logger.send_image(img)
+
 
 class TelegramLogger:
     def __init__(self):

@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torch
 
 from pipelines import get_pipeline, get_callbacks
 from utils import (
@@ -6,7 +7,7 @@ from utils import (
     setup_experiment,
     update_config,
     get_logger,
-    metrics_to_image,
+    log_to_tg,
 )
 
 
@@ -36,22 +37,13 @@ def main():
         )
         trainer.fit(model)
 
-    if not args.no_tg:
-        tg_logger = experiment["tg_logger"]
+    if checkpoint_callback is not None:
+        print("Restore best checkpoint")
+        model_path = checkpoint_callback.best_model_path
+        state_dict = torch.load(model_path)["state_dict"]
+        model.load_state_dict(state_dict)
 
-        message = "{}\nExperiment {}".format(cfg.description, args.checkpoints_dir)
-        if checkpoint_callback is not None:
-            message += "\nBest {}: {:.4f}".format(
-                checkpoint_callback.monitor,
-                checkpoint_callback.best_model_score,
-            )
-        tg_logger.send_message(message)
-
-        # TODO get validation loss
-        metrics = model.logged_metrics
-        if len(metrics):
-            img = metrics_to_image(metrics)
-            tg_logger.send_image(img)
+    log_to_tg(model, experiment, checkpoint_callback)
 
 
 if __name__ == "__main__":
