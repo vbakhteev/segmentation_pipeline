@@ -36,7 +36,7 @@ def main():
         )
         trainer.fit(model)
 
-    if args.tg_logging:
+    if not args.no_tg:
         tg_logger = experiment["tg_logger"]
 
         message = "{}\nExperiment {}".format(cfg.description, args.checkpoints_dir)
