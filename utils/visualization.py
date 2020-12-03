@@ -21,6 +21,8 @@ def metrics_to_image(metrics: dict, n_row=2) -> np.array:
         ax.plot(x, metric_list)
         ax.set_title(name)
 
+    fig.tight_layout(pad=2.0)
+
     canvas.draw()
     s, (width, height) = canvas.print_to_buffer()
     image = np.fromstring(s, np.uint8).reshape((height, width, 4))

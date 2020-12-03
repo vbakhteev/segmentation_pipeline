@@ -2,6 +2,7 @@ import copy
 
 import pytorch_lightning as pl
 import torch
+import numpy as np
 
 from data import get_dataloader
 from models import (
@@ -52,6 +53,10 @@ class BasePipeline(pl.LightningModule):
         raise NotImplementedError
 
     def validation_epoch_end(self, outputs: list):
+        self.logged_metrics["valid_loss"][-1] = np.mean(
+            self.logged_metrics["valid_loss"][-1]
+        )
+
         for metric_name in self.logging_names:
             metric_o = getattr(self, metric_name)
             self.logged_metrics[metric_name] += [metric_o.compute().item()]
