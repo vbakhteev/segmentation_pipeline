@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from data.heplers.base_dataset import BaseDataset
 
 
-class HippocampusDataset(BaseDataset):
+class ProstateDataset(BaseDataset):
     """
     Data resides at http://medicaldecathlon.com/index.html
     """
@@ -34,14 +34,13 @@ class HippocampusDataset(BaseDataset):
         image (tensor) -- an image in the input domain
         mask (tensor) -- corresponding mask
         """
-        image = nib.load(self.imgs_paths[index]).get_fdata() / 5000.0
+        image = nib.load(self.imgs_paths[index]).get_fdata()[..., 0] / 3370.0
         mask = nib.load(self.masks_paths[index]).get_fdata()
-
         sample = self.transforms(image=image, mask=mask)
         image = sample["image"].type(torch.float)
         mask = sample["mask"].type(torch.int64)
 
-        return {"image": image, "mask_hippocampus": mask}
+        return {"image": image, "mask_prostate": mask}
 
     def _len(self):
         return len(self.imgs_paths)

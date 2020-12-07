@@ -1,7 +1,8 @@
 import pydoc
 
-import numpy as np
 import albumentations as albu
+import numpy as np
+import torch
 from albumentations.pytorch import ToTensor, ToTensorV2
 
 from data.heplers.functional_transforms import resize_mask3d, resize_img3d
@@ -53,6 +54,34 @@ def get_albu_object(name, *args, **kwargs):
         raise KeyError(f"Transform {name} is not supported")
 
     return cls(*args, **kwargs)
+
+
+class ToTensor3D(albu.BasicTransform):
+    """Convert image and mask to `torch.Tensor`."""
+
+    def __init__(self, always_apply=True, p=1.0):
+        super().__init__(always_apply=always_apply, p=p)
+
+    @property
+    def targets(self):
+        return {"image": self.apply, "mask": self.apply_to_mask}
+
+    def apply(self, img, **params):  # skipcq: PYL-W0613
+        if len(img.shape) not in [3, 4]:
+            raise ValueError("ToTensor3D only supports images in LHW or LHWC format")
+
+        if len(img.shape) == 3:
+            img = np.expand_dims(img, 3)
+
+        return torch.from_numpy(img.transpose(3, 0, 1, 2))
+
+    def apply_to_mask(self, mask, **params):  # skipcq: PYL-W0613
+        if mask.ndim == 4:
+            mask = mask.transpose(3, 0, 1, 2)
+        return torch.from_numpy(mask)
+
+    def get_params_dependent_on_targets(self, params):
+        return {}
 
 
 class Crop3d(albu.DualTransform):

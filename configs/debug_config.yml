@@ -97,7 +97,7 @@ model:
       - datasets_ids: [0]
         target: 'mask_human'
 
-        # In lightning module metrics will have name {target}_{metric_name}
+        # In lightning module metrics will have name {target}@{metric_name}
         metrics: [
           { 'name': 'intersection_over_union', 'num_classes': 2, 'threshold': 0.5 },
         ]
