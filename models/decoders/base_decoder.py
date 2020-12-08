@@ -42,12 +42,26 @@ class EncoderDecoderSMP(nn.Module):
         self.decoder.out_channels = self.get_decoder_out_channels()
 
     def get_decoder_out_channels(self):
+        n_dim = -1
         for module in self.encoder.modules():
             if isinstance(module, nn.Conv2d):
+                n_dim = 2
                 break
+            elif isinstance(module, nn.Conv3d):
+                n_dim = 3
+                break
+
         in_channels = module.in_channels
 
-        mock_tensor = torch.zeros((1, in_channels, 64, 64))
+        if n_dim == 2:
+            mock_tensor = torch.zeros((1, in_channels, 64, 64))
+        elif n_dim == 3:
+            mock_tensor = torch.zeros((1, in_channels, 64, 64, 64))
+        else:
+            raise NotImplementedError(
+                "Update method EncoderDecoderSMP.get_decoder_out_channels"
+            )
+
         _, decoder_output = self.forward(mock_tensor)
         return decoder_output.shape[1]
 

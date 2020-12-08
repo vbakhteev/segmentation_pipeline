@@ -7,6 +7,7 @@ from .decoders import SegNet, EncoderDecoderSMP
 from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
 from .modules import get_classification_head, get_segmentation_head
+from .utils import change_layers_dim
 
 __all__ = [
     "get_optimizer",
@@ -27,7 +28,9 @@ available_2d_models_segmentation = {
     "DeepLabV3Plus": smp.DeepLabV3Plus,
 }
 
-available_models_segmentation = {"SegNet": SegNet}
+available_models_segmentation = {
+    "SegNet": SegNet,
+}
 
 segmentation_metrics = {"intersection_over_union": intersection_over_union}
 
@@ -37,8 +40,16 @@ def get_segmentation_model(model_cfg):
     n_dim = model_cfg.n_dim
     params = model_cfg.params
 
-    if n_dim == 2 and name in available_2d_models_segmentation:
-        model = available_2d_models_segmentation[name](**params)
+    if name in available_2d_models_segmentation:
+        if n_dim == 2:
+            model = available_2d_models_segmentation[name](**params)
+        elif n_dim == 3:
+            model = get_smp_3d(name, **params)
+        else:
+            raise NotImplementedError(
+                f"Model {name} from smp is not supported for {n_dim}D"
+            )
+
         model = EncoderDecoderSMP(model)
 
     elif name in available_models_segmentation:
@@ -53,6 +64,25 @@ def get_segmentation_model(model_cfg):
         seg_heads_cfgs=model_cfg.segmentation.heads,
         clf_heads_cfgs=model_cfg.classification.heads,
     )
+
+
+@change_layers_dim(
+    from_dim=2,
+    to_dim=3,
+    layer_names=(
+        "Conv",
+        "BatchNorm",
+        "MaxPool",
+        "AvgPool",
+        "ConvTranspose",
+        "AdaptiveMaxPool",
+        "AdaptiveAvgPool",
+    ),
+)
+def get_smp_3d(name, **params):
+    params["encoder_weights"] = None
+    model = available_2d_models_segmentation[name](**params)
+    return model
 
 
 def get_optimizer(params, cfg_optimizer):
