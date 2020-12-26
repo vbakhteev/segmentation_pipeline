@@ -16,7 +16,7 @@ datasets:
   list:
     - id: 0
       name: human                        # Used to get NameDataset from data/name_dataset.py
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+      root: '/home/vladislav/data/Human-Segmentation-Dataset'
       use_to_train: True
       use_to_validate: True
 
@@ -36,7 +36,7 @@ datasets:
 
     - id: 1
       name: faces
-      root: '/Users/vladbahteev/FASSEG-repository'
+      root: '/home/vladislav/data/FASSEG-repository'
       use_to_train: True
       use_to_validate: False
 
@@ -50,7 +50,7 @@ datasets:
 
 
 dataloader:
-  num_workers: 0
+  num_workers: 4
   batch_size: 10
   pin_memory: True
 
@@ -148,7 +148,7 @@ logging:
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
-  gpus: 0
+  gpus: 1
   num_nodes: 1
 
 # Parameters defined in stages are used to update fields defined above

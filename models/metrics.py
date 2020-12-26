@@ -82,12 +82,21 @@ def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
 
     outputs = outputs.int()
     labels = labels.int()
-
     bs = outputs.shape[0]
-    outputs = outputs.reshape((bs, -1))
-    labels = labels.reshape((bs, -1))
-    intersection = (outputs & labels).sum(1).float()
-    union = (outputs | labels).sum(1).float()
 
-    iou = (intersection + EPS) / (union + EPS)
+    ious = []
+    for class_i in range(
+        1, outputs.shape[-1]
+    ):  # Start from 1 to not consider background
+        outputs_class = outputs[..., class_i]
+        labels_class = labels[..., class_i]
+
+        outputs_class = outputs_class.reshape((bs, -1))
+        labels_class = labels_class.reshape((bs, -1))
+        intersection = (outputs_class & labels_class).sum(1).float()
+        union = (outputs_class | labels_class).sum(1).float()
+
+        iou = (intersection + EPS) / (union + EPS)
+        ious += [iou]
+    iou = torch.stack(ious).mean(0)
     return iou

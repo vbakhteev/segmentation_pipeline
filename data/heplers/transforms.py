@@ -85,11 +85,12 @@ class ToTensor3D(albu.BasicTransform):
 
 
 class Crop3d(albu.DualTransform):
-    def __init__(self, size: tuple, always_apply=False, p=1.0):
+    def __init__(self, size: tuple, always_apply=True, p=1.0):
         super().__init__(always_apply, p)
         self.size = size
 
     def apply(self, img, **params):
+        # TODO improve cropping
         return img[: self.size[0], : self.size[1], : self.size[2]]
 
     def apply_to_mask(self, mask, **params):
