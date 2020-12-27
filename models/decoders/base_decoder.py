@@ -1,6 +1,7 @@
 import segmentation_models_pytorch.base as smp_base
 import torch
 from torch import nn
+from torch.utils.checkpoint import checkpoint
 
 from models.encoders import get_encoder
 from models.encoders.base_encoder import BaseEncoder
@@ -18,25 +19,34 @@ class EncoderDecoder(nn.Module):
         encoder_name: str,
         n_dim: int,
         in_channels: int,
+        checkpointing: bool = False,
     ):
         super().__init__()
 
+        self.checkpointing = checkpointing
         self.encoder: BaseEncoder = get_encoder(
             encoder_name=encoder_name, n_dim=n_dim, num_channels=in_channels
         )
         self.decoder: BaseDecoder = nn.Identity()
 
+    def get_encoder_features(self, x):
+        return tuple(self.encoder(x))
+
     def forward(self, x):
-        encoder_features = self.encoder(x)
-        decoder_output = self.decoder(*encoder_features)
+        if self.checkpointing:
+            encoder_features = checkpoint(self.get_encoder_features, x)
+            decoder_output = checkpoint(self.decoder, *encoder_features)
+        else:
+            encoder_features = self.encoder(x)
+            decoder_output = self.decoder(*encoder_features)
 
         return encoder_features, decoder_output
 
 
-class EncoderDecoderSMP(nn.Module):
-    def __init__(self, model: smp_base.SegmentationModel):
-        super().__init__()
-
+class EncoderDecoderSMP(EncoderDecoder):
+    def __init__(self, model: smp_base.SegmentationModel, checkpointing: bool = False):
+        # Useless mock parameters to init nn.Module. Ignore them
+        super().__init__("resnet18", 2, 1, checkpointing)
         self.encoder = model.encoder
         self.decoder = model.decoder
         self.decoder.out_channels = self.get_decoder_out_channels()
@@ -64,9 +74,3 @@ class EncoderDecoderSMP(nn.Module):
 
         _, decoder_output = self.forward(mock_tensor)
         return decoder_output.shape[1]
-
-    def forward(self, x):
-        encoder_features = self.encoder(x)
-        decoder_output = self.decoder(*encoder_features)
-
-        return encoder_features, decoder_output

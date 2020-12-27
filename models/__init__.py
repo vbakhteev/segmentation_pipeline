@@ -17,7 +17,7 @@ __all__ = [
     "get_criterion",
 ]
 
-available_2d_models_segmentation = {
+smp_models = {
     "Unet": smp.Unet,
     # "UnetPlusPlus": smp.UnetPlusPlus,
     "Linknet": smp.Linknet,
@@ -40,9 +40,9 @@ def get_segmentation_model(model_cfg):
     n_dim = model_cfg.n_dim
     params = model_cfg.params
 
-    if name in available_2d_models_segmentation:
+    if name in smp_models:
         if n_dim == 2:
-            model = available_2d_models_segmentation[name](**params)
+            model = smp_models[name](**params)
         elif n_dim == 3:
             model = get_smp_3d(name, **params)
         else:
@@ -50,10 +50,13 @@ def get_segmentation_model(model_cfg):
                 f"Model {name} from smp is not supported for {n_dim}D"
             )
 
-        model = EncoderDecoderSMP(model)
+        model = EncoderDecoderSMP(
+            model, checkpointing=model_cfg.activations_checkpointing
+        )
 
     elif name in available_models_segmentation:
         model = available_models_segmentation[name](n_dim=n_dim, **params)
+        model.checkpointing = model_cfg.activations_checkpointing
 
     else:
         raise KeyError(f"Segmentation model {name} is not supported for {n_dim}D")
@@ -81,7 +84,7 @@ def get_segmentation_model(model_cfg):
 )
 def get_smp_3d(name, **params):
     params["encoder_weights"] = None
-    model = available_2d_models_segmentation[name](**params)
+    model = smp_models[name](**params)
     return model
 
 
