@@ -22,33 +22,57 @@ class BaseSegmentationMetric(pl.metrics.Metric):
         num_classes: int,
         compute_on_step=True,
         dist_sync_on_step=False,
-        threshold=0.5,
+        thresholds=None,
     ):
+        if num_classes == 2 and thresholds is None:
+            raise KeyError(
+                "In case of binary segmentation you have to "
+                "specify list of thresholds for metric"
+            )
+
         super().__init__(
             compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step
         )
 
         self.num_classes = num_classes
         self.metric_fn = metric_fn
-        self.threshold = threshold
+        self.thresholds = thresholds
 
-        self.add_state("scores_sum", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        if self.num_classes == 2:
+            self.add_state(
+                "scores_sum", default=torch.zeros(len(thresholds)), dist_reduce_fx="sum"
+            )
+        else:
+            self.add_state(
+                "scores_sum", default=torch.tensor(0.0), dist_reduce_fx="sum"
+            )
+
         self.add_state("total", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
-        preds, target = self._input_format(preds, target)
+        if self.num_classes == 2:
+            # calculate metric for each specified threshold
+            for i, threshold in enumerate(self.thresholds):
+                preds_, target_ = self._input_format(preds, target, threshold)
+                scores = self.metric_fn(preds_, target_)
+                self.scores_sum[i] += torch.sum(scores)
+        else:
+            preds_, target_ = self._input_format(preds, target)
+            scores = self.metric_fn(preds_, target_)
+            self.scores_sum += torch.sum(scores)
 
-        scores = self.metric_fn(preds, target)
-        self.scores_sum += torch.sum(scores)
         self.total += scores.shape[0] if len(scores.shape) else 1
 
     def compute(self):
-        return self.scores_sum / self.total
+        if self.num_classes == 2:
+            return (self.scores_sum / self.total).max()
+        else:
+            return self.scores_sum / self.total
 
-    def _input_format(self, preds, target):
-        if self.num_classes <= 2:
+    def _input_format(self, preds, target, threshold=None):
+        if self.num_classes == 2:
             preds = preds.softmax(dim=1)
-            preds = preds[:, 1] > self.threshold
+            preds = preds[:, 1] > threshold
 
         elif self.num_classes > 2:
             preds = preds.argmax(dim=1)
