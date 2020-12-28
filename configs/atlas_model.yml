@@ -2,7 +2,7 @@ defaults:
   seed: 0
 
 # specifics about experiment that will be logged to telegram
-description: "Pretraining of segmentation model using several datasets."
+description: "Segmentation of lesions on t1-weighted MRI"
 
 
 ########################################################
@@ -11,42 +11,28 @@ description: "Pretraining of segmentation model using several datasets."
 
 datasets:
   # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
-  steps_per_epoch: 5
+  steps_per_epoch: 92  # 183 samples
 
   list:
     - id: 0
-      name: hippocampus
-      root: '/home/vladislav/data/hippocampus'
-      use_to_train: True
-      use_to_validate: False
-
-      pre_transforms: []
-
-      augmentations: []
-
-      post_transforms:
-        - name: Resize3d
-          size: [64, 64, 64]
-        - name: ToTensor3D
-
-    - id: 1
-      name: prostate
-      root: '/home/vladislav/data/prostate'
+      name: atlas                        # Used to get NameDataset from data/name_dataset.py
+      root: '/home/vladislav/data/ATLAS_R1.1'
       use_to_train: True
       use_to_validate: True
 
-      pre_transforms: [ ]
-
-      augmentations: [ ]
-
-      post_transforms:
+      pre_transforms: []
+      augmentations: []
+      post_transforms: # 197, 233, 189
+        - name: Crop3d
+          size: [ 192, 224, 189 ]
         - name: Resize3d
-          size: [128, 128, 32]
+          size: [ 192, 224, 192 ]
         - name: ToTensor3D
 
+
 dataloader:
-  num_workers: 5
-  batch_size: 5
+  num_workers: 4
+  batch_size: 2
   pin_memory: True
 
 ########################################################
@@ -54,12 +40,18 @@ dataloader:
 ########################################################
 
 model:
-  name: 'SegNet'
+  name: 'Unet'
   n_dim: 3
   pipeline: 'multi_task_segmentation'
-  params: {'encoder_name': 'resnet34', 'in_channels': 1}
+  params: {'encoder_name': 'resnet50', 'in_channels': 1}
 
+  activations_checkpointing: True
+
+  # Also works for regression
   classification:
+    default_criterion:
+      cls: 'torch.nn.BCEWithLogitsLoss'
+
     heads: []
 
   segmentation:
@@ -69,40 +61,38 @@ model:
 
     heads:
       - datasets_ids: [0]
-        target: 'mask_hippocampus'
-
-#        # In lightning module metrics will have name {target}@{metric_name}
-#        metrics: [
-#          { 'name': 'intersection_over_union', 'num_classes': 3, 'threshold': 0.5 },
-#        ]
-
-        head: 'conv_upsample'
-        params:
-          classes: 3
-
-
-      - datasets_ids: [ 1 ]
-        target: 'mask_prostate'       # Train samples - 24
+        target: 'mask_atlas'
 
         # In lightning module metrics will have name {target}@{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'num_classes': 3, 'threshold': 0.5 },
+          { 'name': 'intersection_over_union', 'num_classes': 2,
+            'thresholds': [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5] },
         ]
 
         head: 'conv_upsample'
         params:
-          classes: 3
+          classes: 2
+          kernel_size: 3
+
+        criterion:
+          cls: 'pytorch_toolbelt.losses.JointLoss'
+          first:
+            cls: 'pytorch_toolbelt.losses.JaccardLoss'
+            mode: 'multiclass'
+          second:
+            cls: 'pytorch_toolbelt.losses.FocalLoss'
+
 
 
 optimizer: [{
   'cls': 'torch.optim.Adam',
-  'lr': 0.001
+  'lr': 0.0001
 }]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
-  'cls': 'torch.optim.lr_scheduler.ReduceLROnPlateau',
-  'patience': 3,
+  'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
+  'T_0': 2, 'T_mult': 2
 }]
 
 ########################################################
@@ -110,8 +100,8 @@ scheduler: [{
 ########################################################
 
 callbacks: [
-  {'name': 'ModelCheckpoint', 'monitor': 'mask_prostate@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
-  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 10},
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_atlas@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
@@ -125,6 +115,6 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - name: res-64
+  - name: training
     lightning:
-      max_epochs: 50
+      max_epochs: 20

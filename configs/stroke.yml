@@ -24,6 +24,8 @@ datasets:
 
       augmentations:
         - name: HorizontalFlip
+        - name: VerticalFlip
+        - name: RandomRotate90
 
       post_transforms:
         - name: Resize
@@ -47,6 +49,8 @@ model:
   pipeline: 'multi_task_segmentation'
   params: {'encoder_name': 'resnet18', 'in_channels': 1}
 
+  activations_checkpointing: False
+
   # Also works for regression
   classification:
     heads: []
@@ -63,7 +67,7 @@ model:
 
         # In lightning module metrics will have name {target}_{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'num_classes': 2, 'threshold': 0.5 },
+          { 'name': 'intersection_over_union', 'num_classes': 2, 'thresholds': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6] },
         ]
 
         head: 'conv_upsample'
@@ -79,7 +83,7 @@ optimizer: [{
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
   'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
-  'T_0': 2, 'T_mult': 2
+  'T_0': 20, 'T_mult': 1
 }]
 
 ########################################################
@@ -88,7 +92,7 @@ scheduler: [{
 
 callbacks: [
   {'name': 'ModelCheckpoint', 'monitor': 'mask@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
-  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
+#  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
@@ -104,4 +108,4 @@ lightning:
 train_stages:
   - name: training
     lightning:
-      max_epochs: 10
+      max_epochs: 100
