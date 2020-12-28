@@ -52,7 +52,7 @@ class SegNetDecoder(BaseDecoder):
                 padding=0,
                 bias=True,
             ),
-            upsample_conv_bn_relu(out_channels * 16, out_channels * 16, n_dim=n_dim),
+            # upsample_conv_bn_relu(out_channels * 16, out_channels * 16, n_dim=n_dim),
             upsample_conv_bn_relu(out_channels * 16, out_channels * 8, n_dim=n_dim),
             upsample_conv_bn_relu(out_channels * 8, out_channels * 4, n_dim=n_dim),
             upsample_conv_bn_relu(out_channels * 4, out_channels * 2, n_dim=n_dim),

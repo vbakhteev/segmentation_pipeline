@@ -2,7 +2,7 @@ defaults:
   seed: 0
 
 # specifics about experiment that will be logged to telegram
-description: "Baseline 2d segmentaion of stroke"
+description: "Segmentation of lesions on t1-weighted MRI"
 
 
 ########################################################
@@ -11,32 +11,28 @@ description: "Baseline 2d segmentaion of stroke"
 
 datasets:
   # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
-  steps_per_epoch: 3
+  steps_per_epoch: 92  # 183 samples
 
   list:
     - id: 0
-      name: mri_stroke
-      root: '/home/vladislav/data/MKDC_stroke_CT_MRI/1stBatchWithMasks'
+      name: atlas                        # Used to get NameDataset from data/name_dataset.py
+      root: '/home/vladislav/data/ATLAS_R1.1'
       use_to_train: True
       use_to_validate: True
 
       pre_transforms: []
-
-      augmentations:
-        - name: HorizontalFlip
-        - name: VerticalFlip
-        - name: RandomRotate90
-
-      post_transforms:
-        - name: Resize
-          height: 256
-          width: 256
-        - name: 'ToTensorV2'
+      augmentations: []
+      post_transforms: # 197, 233, 189
+        - name: Crop3d
+          size: [ 192, 224, 189 ]
+        - name: Resize3d
+          size: [ 192, 224, 192 ]
+        - name: ToTensor3D
 
 
 dataloader:
-  num_workers: 5
-  batch_size: 10
+  num_workers: 4
+  batch_size: 2
   pin_memory: True
 
 ########################################################
@@ -45,16 +41,18 @@ dataloader:
 
 model:
   name: 'Unet'
-  n_dim: 2
+  n_dim: 3
   pipeline: 'multi_task_segmentation'
-  params: {'encoder_name': 'resnet18', 'in_channels': 1}
+  params: {'encoder_name': 'resnet50', 'in_channels': 1}
 
-  activations_checkpointing: False
+  activations_checkpointing: True
 
   # Also works for regression
   classification:
-    heads: []
+    default_criterion:
+      cls: 'torch.nn.BCEWithLogitsLoss'
 
+    heads: []
 
   segmentation:
     default_criterion:
@@ -63,27 +61,38 @@ model:
 
     heads:
       - datasets_ids: [0]
-        target: 'mask'
+        target: 'mask_atlas'
 
-        # In lightning module metrics will have name {target}_{metric_name}
+        # In lightning module metrics will have name {target}@{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'num_classes': 2, 'thresholds': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6] },
+          { 'name': 'intersection_over_union', 'num_classes': 2,
+            'thresholds': [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5] },
         ]
 
         head: 'conv_upsample'
         params:
           classes: 2
+          kernel_size: 3
+
+        criterion:
+          cls: 'pytorch_toolbelt.losses.JointLoss'
+          first:
+            cls: 'pytorch_toolbelt.losses.JaccardLoss'
+            mode: 'multiclass'
+          second:
+            cls: 'pytorch_toolbelt.losses.FocalLoss'
+
 
 
 optimizer: [{
   'cls': 'torch.optim.Adam',
-  'lr': 0.001
+  'lr': 0.0001
 }]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
   'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
-  'T_0': 20, 'T_mult': 1
+  'T_0': 2, 'T_mult': 2
 }]
 
 ########################################################
@@ -91,8 +100,8 @@ scheduler: [{
 ########################################################
 
 callbacks: [
-  {'name': 'ModelCheckpoint', 'monitor': 'mask@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
-#  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_atlas@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
 logging:
@@ -108,4 +117,4 @@ lightning:
 train_stages:
   - name: training
     lightning:
-      max_epochs: 100
+      max_epochs: 20

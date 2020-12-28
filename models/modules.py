@@ -140,6 +140,39 @@ class ConvUpsampleSegmentationHead(nn.Sequential):
         super().__init__(conv, upsampling)
 
 
+class SCSEModule(nn.Module):
+    def __init__(self, in_channels, n_dim: int, reduction=16):
+        super().__init__()
+        layers = get_layers_by_dim(n_dim)
+
+        self.cSE = nn.Sequential(
+            layers["adaptive_avg_pool"](1),
+            layers["conv"](in_channels, in_channels // reduction, 1),
+            nn.ReLU(inplace=True),
+            layers["conv"](in_channels // reduction, in_channels, 1),
+            nn.Sigmoid(),
+        )
+        self.sSE = nn.Sequential(layers["conv"](in_channels, 1, 1), nn.Sigmoid())
+
+    def forward(self, x):
+        return x * self.cSE(x) + x * self.sSE(x)
+
+
+class Attention(nn.Module):
+    def __init__(self, name, **params):
+        super().__init__()
+
+        if name is None:
+            self.attention = nn.Identity(**params)
+        elif name == "scse":
+            self.attention = SCSEModule(**params)
+        else:
+            raise ValueError("Attention {} is not implemented".format(name))
+
+    def forward(self, x):
+        return self.attention(x)
+
+
 segmentation_heads = {
     "conv_upsample": ConvUpsampleSegmentationHead,
 }

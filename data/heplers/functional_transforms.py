@@ -1,10 +1,12 @@
+from typing import Union
+
 import numpy as np
 import scipy
 import skimage
 from scipy import ndimage
 
 
-def resize_img3d(img: np.ndarray, target_size: tuple):
+def resize_img3d(img: np.ndarray, target_size: Union[tuple, list, np.array]):
     scale = get_scale(img, target_size)
     resized_img = scipy.ndimage.zoom(img, scale)
     return resized_img

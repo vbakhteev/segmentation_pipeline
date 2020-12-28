@@ -16,7 +16,7 @@ datasets:
   list:
     - id: 0
       name: human                        # Used to get NameDataset from data/name_dataset.py
-      root: '/Users/vladbahteev/Human-Segmentation-Dataset'
+      root: '/home/vladislav/data/Human-Segmentation-Dataset'
       use_to_train: True
       use_to_validate: True
 
@@ -36,7 +36,7 @@ datasets:
 
     - id: 1
       name: faces
-      root: '/Users/vladbahteev/FASSEG-repository'
+      root: '/home/vladislav/data/FASSEG-repository'
       use_to_train: True
       use_to_validate: False
 
@@ -50,7 +50,7 @@ datasets:
 
 
 dataloader:
-  num_workers: 0
+  num_workers: 4
   batch_size: 10
   pin_memory: True
 
@@ -62,7 +62,9 @@ model:
   name: 'Unet'
   n_dim: 2
   pipeline: 'multi_task_segmentation'
-  params: {'encoder_name': 'resnet18', 'in_channels': 3}
+  params: {'encoder_name': 'resnet50', 'in_channels': 3}
+
+  activations_checkpointing: False
 
   # Also works for regression
   classification:
@@ -97,9 +99,9 @@ model:
       - datasets_ids: [0]
         target: 'mask_human'
 
-        # In lightning module metrics will have name {target}_{metric_name}
+        # In lightning module metrics will have name {target}@{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'num_classes': 2, 'threshold': 0.5 },
+          { 'name': 'intersection_over_union', 'num_classes': 2, 'thresholds': [0.3, 0.4, 0.5, 0.6] },
         ]
 
         head: 'conv_upsample'
@@ -130,7 +132,7 @@ optimizer: [{
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
   'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
-  'T_0': 2, 'T_mult': 2
+  'T_0': 5, 'T_mult': 1
 }]
 
 ########################################################
@@ -148,20 +150,20 @@ logging:
 
 # You can add any argument for pytorch_lightning.Trainer
 lightning:
-  gpus: 0
+  gpus: 1
   num_nodes: 1
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
   - name: res-64
     lightning:
-      max_epochs: 2
+      max_epochs: 20
 
   - name: res-128
     lightning:
-      max_epochs: 2
+      max_epochs: 50
 
-    optimizer: [{'cls': 'torch.optim.SGD', 'lr': 0.0001}]
+    optimizer: [{'cls': 'torch.optim.Adam', 'lr': 0.0001}]
 
     model:
       segmentation:
