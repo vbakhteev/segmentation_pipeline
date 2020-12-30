@@ -64,9 +64,9 @@ class EncoderDecoderSMP(EncoderDecoder):
         in_channels = module.in_channels
 
         if n_dim == 2:
-            mock_tensor = torch.zeros((1, in_channels, 64, 64))
+            mock_tensor = torch.zeros((1, in_channels, 128, 128))
         elif n_dim == 3:
-            mock_tensor = torch.zeros((1, in_channels, 64, 64, 64))
+            mock_tensor = torch.zeros((1, in_channels, 128, 128, 128))
         else:
             raise NotImplementedError(
                 "Update method EncoderDecoderSMP.get_decoder_out_channels"
