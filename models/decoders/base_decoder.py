@@ -72,5 +72,7 @@ class EncoderDecoderSMP(EncoderDecoder):
                 "Update method EncoderDecoderSMP.get_decoder_out_channels"
             )
 
-        _, decoder_output = self.forward(mock_tensor)
+        self.eval()
+        with torch.no_grad():
+            _, decoder_output = self.forward(mock_tensor)
         return decoder_output.shape[1]
