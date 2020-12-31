@@ -1,7 +1,7 @@
 from pytorch_lightning import callbacks as cb
 
 from utils import dict_remove_key
-from .callbacks import EarlyStopping
+from .callbacks import EarlyStopping, FreezeEncoderCallback, FreezeDecoderCallback
 from .multi_task_segmentator import MultiTaskSegmentator
 
 available_pipelines = {
@@ -14,6 +14,8 @@ available_callbacks = {
     "GPUStatsMonitor": cb.GPUStatsMonitor,
     "GradientAccumulationScheduler": cb.GradientAccumulationScheduler,
     "LearningRateMonitor": cb.ModelCheckpoint,
+    "FreezeEncoderCallback": FreezeEncoderCallback,
+    "FreezeDecoderCallback": FreezeDecoderCallback,
 }
 
 
