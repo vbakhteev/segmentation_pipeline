@@ -102,3 +102,13 @@ def change_num_channels_first_conv(
         raise NotImplementedError(f"Num channels={num_channels} is not implemented")
 
     return model
+
+
+def freeze(model):
+    for param in model.parameters():
+        param.requires_grad = False
+
+
+def unfreeze(model):
+    for param in model.parameters():
+        param.requires_grad = True
