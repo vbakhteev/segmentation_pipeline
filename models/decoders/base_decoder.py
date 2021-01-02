@@ -35,11 +35,10 @@ class EncoderDecoder(nn.Module):
     def forward(self, x):
         if self.checkpointing:
             encoder_features = checkpoint(self.get_encoder_features, x)
-            decoder_output = checkpoint(self.decoder, *encoder_features)
         else:
             encoder_features = self.encoder(x)
-            decoder_output = self.decoder(*encoder_features)
 
+        decoder_output = self.decoder(*encoder_features)
         return encoder_features, decoder_output
 
 
