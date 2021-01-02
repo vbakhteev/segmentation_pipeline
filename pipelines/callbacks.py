@@ -20,6 +20,7 @@ class FreezeEncoderCallback(cb.Callback):
             freeze(pl_module.model.model.encoder)
         else:
             unfreeze(pl_module.model.model.encoder)
+            self.epochs = 0     # To not freeze model in next stages
 
 
 class FreezeDecoderCallback(cb.Callback):
@@ -31,3 +32,4 @@ class FreezeDecoderCallback(cb.Callback):
             freeze(pl_module.model.model.decoder)
         else:
             unfreeze(pl_module.model.model.decoder)
+            self.epochs = 0
