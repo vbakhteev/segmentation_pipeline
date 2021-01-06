@@ -19,7 +19,7 @@ __all__ = [
 
 smp_models = {
     "Unet": smp.Unet,
-    # "UnetPlusPlus": smp.UnetPlusPlus,
+    "UnetPlusPlus": smp.UnetPlusPlus,
     "Linknet": smp.Linknet,
     "FPN": smp.FPN,
     "PSPNet": smp.PSPNet,

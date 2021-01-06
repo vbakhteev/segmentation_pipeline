@@ -30,7 +30,7 @@ Let's go for each section of config file:
 Contains random seed of the experiment.
 ### `description`
 A small description to characterize the experiment.
-### `datasets`
+### datasets
 ##### `steps_per_epoch` - How many steps will one epoch last.
 If you use multiple datasets then this number will be multiplied by number of train datasets.
 
@@ -62,15 +62,15 @@ If you have N train datasets, then training will be like:
 + Train on batch from 1st dataset.
 + ...
 
-### `dataloader`
+### dataloader
 Arguments that will be passed into  `torch.utils.data.DataLoader`
 
-### `model`
+### model
 Config to create model. May be dependent on task (classification, segmentation, etc.)
 
 This documentation considers segmentation task.
 
-**Warning**: Number of classes always must be >=2. In binary segmentation case it is equal 2. 
+<span style="color:red">**Warning**</span>: Number of classes always must be >=2. In binary segmentation case it is equal 2. 
 
 ##### `name` - name of model
 ##### `n_dim` - number of dimensions of model and input data.
@@ -88,14 +88,14 @@ This documentation considers segmentation task.
 + `head` - name of head module. These heads modules are defined in `models/modules.py`.
 + `params` - parameters of head module.
 
-### `optimizer`
+### optimizer
 List of optimizers. For simple tasks like classification/segmentation there is only one optimizer.
 
 ##### `cls` - dot-like path to optimizer. Example: `torch.optim.Adam`.
 ##### `lr` - learning rate.
 ##### `Other parameters` - optimizer-specific.
 
-### `scheduler`
+### scheduler
 List of schedulers. For simple tasks like classification/segmentation there is only one scheduler.
 
 By default, scheduler is called at the end of each epoch. **TODO: add parameters that determines when scheduler is called.** 
@@ -103,7 +103,7 @@ By default, scheduler is called at the end of each epoch. **TODO: add parameters
 ##### `cls` - dot-like path to scheduler. Example: `torch.optim.lr_scheduler.CosineAnnealingWarmRestarts`.
 ##### `Other parameters` - scheduler-specific.
 
-### `callbacks`
+### callbacks
 List of pytorch-lightning callback. Custom callback can be added in `pipelines/callbacks.py`
 
 Supported callbacks:
@@ -113,7 +113,7 @@ Supported callbacks:
 + `GradientAccumulationScheduler`
 + `LearningRateMonitor`
 
-### `logging`
+### logging
 Which logger to use.
 
 ##### `name` - name of logger. 
@@ -128,10 +128,10 @@ Available:
 
 ##### `params` - parameters of logger.
 
-### `lightning`
+### lightning
 Put here `pytorch_lightning.Trainer` parameters. For example: `gpus`, `num_nodes`.
 
-### `train_stages: [stage]`
+### train_stages: [stage]
 Training is divided into stages where one stage is different from another by different components. For example you can change dataset parameters, augmentations, pre and post processing, loss function, optimizer, scheduler, batch_size and others. 
 
 ##### `name` - name of stage.
