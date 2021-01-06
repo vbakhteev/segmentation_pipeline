@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 
 
@@ -62,46 +61,6 @@ def change_layers_dim(
         return wrapper
 
     return decorator
-
-
-def change_num_channels_first_conv(
-    model: nn.Module, n_dim: int, num_channels: int
-) -> nn.Module:
-    if num_channels == 3:
-        pass
-
-    elif num_channels == 1:
-        named_conv = next(model.named_parameters())
-        name = named_conv[0].split(".")[:-1]
-        w = named_conv[1]  # (out_filters, 3, k, k) or (out_filters, 3, k, k, k)
-
-        nn_module = model
-        for n in name[:-1]:
-            nn_module = getattr(nn_module, n)
-        first_conv = next(nn_module.children())
-
-        Conv = get_layers_by_dim(n_dim)["conv"]
-        setattr(
-            nn_module,
-            name[-1],
-            Conv(
-                1,
-                w.shape[0],
-                kernel_size=w.shape[2:],
-                stride=first_conv.stride,
-                padding=first_conv.padding,
-                bias=first_conv.bias,
-                dilation=first_conv.dilation,
-                groups=first_conv.groups,
-            ),
-        )
-        w = torch.sum(w, dim=1, keepdim=True)
-        getattr(nn_module, name[-1]).weight = nn.Parameter(w)
-
-    else:
-        raise NotImplementedError(f"Num channels={num_channels} is not implemented")
-
-    return model
 
 
 def freeze(model):
