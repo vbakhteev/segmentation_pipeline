@@ -3,7 +3,7 @@ import segmentation_models_pytorch as smp
 from utils import dict_remove_key, object_from_dict
 from .base_models import MultiHeadSegmentator
 from .criterions import get_criterion
-from .decoders import SegNet, EncoderDecoderSMP
+from .decoders import SegNet, HRNet, EncoderDecoderSMP
 from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
 from .modules import get_classification_head, get_segmentation_head
@@ -19,7 +19,7 @@ __all__ = [
 
 smp_models = {
     "Unet": smp.Unet,
-    # "UnetPlusPlus": smp.UnetPlusPlus,
+    "UnetPlusPlus": smp.UnetPlusPlus,
     "Linknet": smp.Linknet,
     "FPN": smp.FPN,
     "PSPNet": smp.PSPNet,
@@ -30,6 +30,7 @@ smp_models = {
 
 available_models_segmentation = {
     "SegNet": SegNet,
+    "HRNet": HRNet,
 }
 
 segmentation_metrics = {"intersection_over_union": intersection_over_union}
