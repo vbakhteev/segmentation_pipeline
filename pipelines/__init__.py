@@ -1,7 +1,7 @@
 from pytorch_lightning import callbacks as cb
 
 from utils import dict_remove_key
-from .callbacks import EarlyStopping, FreezeEncoderCallback, FreezeDecoderCallback
+from .callbacks import *
 from .multi_task_segmentator import MultiTaskSegmentator
 
 available_pipelines = {
@@ -16,6 +16,7 @@ available_callbacks = {
     "LearningRateMonitor": cb.ModelCheckpoint,
     "FreezeEncoderCallback": FreezeEncoderCallback,
     "FreezeDecoderCallback": FreezeDecoderCallback,
+    "Log2DSegmentationResultsCallback": Log2DSegmentationResultsCallback,
 }
 
 
