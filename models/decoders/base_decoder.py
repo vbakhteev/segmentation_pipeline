@@ -35,11 +35,10 @@ class EncoderDecoder(nn.Module):
     def forward(self, x):
         if self.checkpointing:
             encoder_features = checkpoint(self.get_encoder_features, x)
-            decoder_output = checkpoint(self.decoder, *encoder_features)
         else:
             encoder_features = self.encoder(x)
-            decoder_output = self.decoder(*encoder_features)
 
+        decoder_output = self.decoder(*encoder_features)
         return encoder_features, decoder_output
 
 
@@ -64,13 +63,15 @@ class EncoderDecoderSMP(EncoderDecoder):
         in_channels = module.in_channels
 
         if n_dim == 2:
-            mock_tensor = torch.zeros((1, in_channels, 64, 64))
+            mock_tensor = torch.zeros((1, in_channels, 128, 128))
         elif n_dim == 3:
-            mock_tensor = torch.zeros((1, in_channels, 64, 64, 64))
+            mock_tensor = torch.zeros((1, in_channels, 128, 128, 128))
         else:
             raise NotImplementedError(
                 "Update method EncoderDecoderSMP.get_decoder_out_channels"
             )
 
-        _, decoder_output = self.forward(mock_tensor)
+        self.eval()
+        with torch.no_grad():
+            _, decoder_output = self.forward(mock_tensor)
         return decoder_output.shape[1]

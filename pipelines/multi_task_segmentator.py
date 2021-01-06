@@ -82,6 +82,7 @@ class MultiTaskSegmentator(BasePipeline):
         self.log("valid_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         if batch_idx == 0:
             self.logged_metrics["valid_loss"].append([])
+            self.last_model_outputs = model_outputs
         else:
             self.logged_metrics["valid_loss"][-1] += [loss.item()]
 
