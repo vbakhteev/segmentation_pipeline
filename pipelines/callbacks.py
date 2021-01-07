@@ -42,17 +42,18 @@ class FreezeDecoderCallback(cb.Callback):
 
 
 class EMACallback(cb.Callback):
-    def __init__(self, decay, update_nth_iter=5, device=None):
-        """
-        Args:
+    """
+    Args:
         update_nth_iter: Weights updates at each nth train iteration.
         decay: Decay of model's weights.
         device: Where to store weights. If None then on the same device.
 
-        Hint: decay should be such that decay^(steps_per_epoch / update_nth_iter) ~ [0.3, 0.7]
-        If epoch is long then better to expression=0.3
-        If epoch is short then better to set expression=0.7
-        """
+    Hint: decay should be such that decay^(steps_per_epoch / update_nth_iter) ~ [0.3, 0.7]
+    If epoch is long then better to expression=0.3
+    If epoch is short then better to set expression=0.7
+    """
+
+    def __init__(self, decay, update_nth_iter=5, device=None):
         self.update_nth_iter = update_nth_iter
         self.decay = decay
         self.device = device
@@ -79,33 +80,74 @@ class EMACallback(cb.Callback):
 
 
 class SWACallback(cb.Callback):
-    def __init__(self, start_epoch, device=None):
-        """
-        Args:
+    """
+    Args:
         start_epoch: From which epoch to collect weights.
+        swa_lr: learning rate
+        anneal_epochs: number of epochs in the annealing (warmup) phase
+        anneal_strategy: "cos" or "linear"; specifies the annealing
+            strategy: "cos" for cosine annealing, "linear" for linear annealing
         device: Where to store weights. If None then on the same device.
-        """
+
+    lr plot looks like this:
+        ________________________________________
+       /
+      /
+     /
+    """
+
+    def __init__(
+        self,
+        start_epoch,
+        swa_lr=1e-5,
+        anneal_epochs=5,
+        anneal_strategy="cos",
+        device=None,
+    ):
         self.start_epoch = start_epoch
+        self.swa_lr = swa_lr
+        self.anneal_epochs = anneal_epochs
+        self.anneal_strategy = anneal_strategy
         self.device = device
-        self.epoch = 0
+
+        self.epoch = -1
         self.initialized = False
         self.weights = None
 
-    def on_train_epoch_end(self, trainer, pl_module, outputs):
-        if self.start_epoch > self.epoch:
-            self.epoch += 1
+    def on_epoch_end(self, trainer, pl_module):
+        self.epoch += 1
+        if self.start_epoch >= self.epoch:
             return
 
         if self.initialized:
             self.weights.update_parameters(pl_module.model)
+
         else:
             self.weights = torch.optim.swa_utils.AveragedModel(
                 pl_module.model, device=self.device
             )
             self.weights.update_parameters(pl_module.model)
-            self.initialized = True
 
-        self.epoch += 1
+            optim = trainer.optimizers[0]
+            lr_schedulers = [
+                {
+                    "scheduler": torch.optim.swa_utils.SWALR(
+                        optim,
+                        swa_lr=self.swa_lr,
+                        anneal_epochs=self.anneal_epochs,
+                        anneal_strategy=self.anneal_strategy,
+                    ),
+                    "interval": "epoch",
+                    "frequency": 1,
+                    "reduce_on_plateau": False,
+                    "monitor": None,
+                    "strict": True,
+                },
+            ]
+            optim.step()
+            trainer.lr_schedulers = lr_schedulers
+
+            self.initialized = True
 
     def on_train_end(self, trainer, pl_module):
         if not self.initialized:
