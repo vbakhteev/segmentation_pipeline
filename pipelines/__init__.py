@@ -18,6 +18,7 @@ available_callbacks = {
     "FreezeDecoderCallback": FreezeDecoderCallback,
     "Log2DSegmentationResultsCallback": Log2DSegmentationResultsCallback,
     "EMACallback": EMACallback,
+    "SWACallback": SWACallback,
 }
 
 
@@ -30,7 +31,7 @@ def get_pipeline(cfg):
 
 
 def get_callbacks(args, cfg):
-    checkpoint_callback, ema_callback, callbacks_ = None, None, []
+    checkpoint_callback, weight_ensemble_callback, callbacks_ = None, None, []
     for callback_cfg in cfg.callbacks:
 
         if callback_cfg.name == "ModelCheckpoint" and not args.debug:
@@ -40,15 +41,15 @@ def get_callbacks(args, cfg):
                 verbose=True,
             )
 
-        elif callback_cfg.name == "EMACallback":
-            ema_callback = callback = get_callback(callback_cfg)
+        elif callback_cfg.name in ("EMACallback", "SWACallback"):
+            weight_ensemble_callback = callback = get_callback(callback_cfg)
 
         else:
             callback = get_callback(callback_cfg)
 
         callbacks_ += [callback]
 
-    return callbacks_, checkpoint_callback, ema_callback
+    return callbacks_, checkpoint_callback, weight_ensemble_callback
 
 
 def get_callback(callback_cfg, **kwargs):

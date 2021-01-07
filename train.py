@@ -18,7 +18,7 @@ def main():
     logger = get_logger(args, cfg.logging)
     pipeline_cls = get_pipeline(cfg)
     model = pipeline_cls(experiment)
-    callbacks, checkpoint_callback, ema_callback = get_callbacks(args, cfg)
+    callbacks, checkpoint_callback, weight_ensemble_callback = get_callbacks(args, cfg)
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
@@ -38,7 +38,7 @@ def main():
         trainer.fit(model)
 
     # Validate ensemble of weights
-    if ema_callback is not None:
+    if weight_ensemble_callback is not None:
         # Don't update parameters
         model.cfg.optimizer[0].lr = 1e-15
 

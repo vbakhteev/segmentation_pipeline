@@ -78,6 +78,44 @@ class EMACallback(cb.Callback):
         pl_module.model.load_state_dict(ema_state_dict)
 
 
+class SWACallback(cb.Callback):
+    def __init__(self, start_epoch, device=None):
+        """
+        Args:
+        start_epoch: From which epoch to collect weights.
+        device: Where to store weights. If None then on the same device.
+        """
+        self.start_epoch = start_epoch
+        self.device = device
+        self.epoch = 0
+        self.initialized = False
+        self.weights = None
+
+    def on_train_epoch_end(self, trainer, pl_module, outputs):
+        if self.start_epoch > self.epoch:
+            self.epoch += 1
+            return
+
+        if self.initialized:
+            self.weights.update_parameters(pl_module.model)
+        else:
+            self.weights = torch.optim.swa_utils.AveragedModel(
+                pl_module.model, device=self.device
+            )
+            self.weights.update_parameters(pl_module.model)
+            self.initialized = True
+
+        self.epoch += 1
+
+    def on_train_end(self, trainer, pl_module):
+        swa_state_dict = self.weights.module.state_dict()
+        pl_module.model.load_state_dict(swa_state_dict)
+
+        # At the beginning of new stage use new weights
+        self.weights = None
+        self.initialized = False
+
+
 class Log2DSegmentationResultsCallback(cb.Callback):
     def __init__(self, target_mask: str, n_images=1, batch_idx=0):
         """Logs images and model's segmentation masks to your favourite Logger.
