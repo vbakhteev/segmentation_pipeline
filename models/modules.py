@@ -133,7 +133,7 @@ class ConvUpsampleSegmentationHead(nn.Sequential):
             in_channels, classes, kernel_size=kernel_size, padding=kernel_size // 2
         )
         upsampling = (
-            nn.Upsample(scale_factor=upsampling, mode="bilinear")
+            nn.Upsample(scale_factor=upsampling, mode="bilinear", align_corners=False)
             if upsampling > 1
             else nn.Identity()
         )
