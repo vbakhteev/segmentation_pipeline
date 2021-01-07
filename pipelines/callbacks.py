@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
+from timm.utils.model_ema import ModelEmaV2
 from pytorch_lightning import callbacks as cb
 
 from models.utils import freeze, unfreeze
@@ -26,7 +27,10 @@ class FreezeEncoderCallback(cb.Callback):
 
 
 class FreezeDecoderCallback(cb.Callback):
-    def __init__(self, epochs=1, ):
+    def __init__(
+        self,
+        epochs=1,
+    ):
         self.epochs = epochs
 
     def on_epoch_start(self, trainer, pl_module):
@@ -35,6 +39,43 @@ class FreezeDecoderCallback(cb.Callback):
         else:
             unfreeze(pl_module.model.model.decoder)
             self.epochs = 0
+
+
+class EMACallback(cb.Callback):
+    def __init__(self, decay, update_nth_iter=5, device=None):
+        """
+        Args:
+        update_nth_iter: Weights updates at each nth train iteration.
+        decay: Decay of model's weights.
+        device: Where to store weights. If None then on the same device.
+
+        Hint: decay should be such that decay^(steps_per_epoch / update_nth_iter) ~ [0.3, 0.7]
+        If epoch is long then better to expression=0.3
+        If epoch is short then better to set expression=0.7
+        """
+        self.update_nth_iter = update_nth_iter
+        self.decay = decay
+        self.device = device
+        self.initialized = False
+        self.weights = None
+
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
+        if (batch_idx % self.update_nth_iter) != 0:
+            return
+
+        if self.initialized:
+            self.weights.update(pl_module.model)
+        else:
+            self.weights = ModelEmaV2(
+                pl_module.model, decay=self.decay, device=self.device
+            )
+            self.initialized = True
+
+    def on_train_end(self, trainer, pl_module):
+        ema_state_dict = self.weights.module.state_dict()
+        pl_module.model.load_state_dict(ema_state_dict)
 
 
 class Log2DSegmentationResultsCallback(cb.Callback):
@@ -50,7 +91,9 @@ class Log2DSegmentationResultsCallback(cb.Callback):
         self.batch_idx = batch_idx
         self.current_epoch = 0
 
-    def on_validation_batch_end(self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_validation_batch_end(
+        self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+    ):
         if batch_idx != self.batch_idx:  # Log only specific batch.
             return
 
@@ -71,7 +114,13 @@ class Log2DSegmentationResultsCallback(cb.Callback):
         self._plot(images, masks, gts, trainer)
         self.current_epoch += 1
 
-    def _plot(self, images: torch.Tensor, masks: torch.Tensor, gts: torch.Tensor, trainer: pl.Trainer) -> None:
+    def _plot(
+        self,
+        images: torch.Tensor,
+        masks: torch.Tensor,
+        gts: torch.Tensor,
+        trainer: pl.Trainer,
+    ) -> None:
         for img_i, (image, mask, gt) in enumerate(zip(images, masks, gts)):
             if img_i >= self.n_images:
                 return
@@ -81,10 +130,14 @@ class Log2DSegmentationResultsCallback(cb.Callback):
             self.__draw_sample(fig, axarr, 1, mask, "Mask")
             self.__draw_sample(fig, axarr, 2, gt, "Ground Truth")
 
-            trainer.logger.experiment.add_figure("segmentation result", fig, global_step=self.current_epoch)
+            trainer.logger.experiment.add_figure(
+                "segmentation result", fig, global_step=self.current_epoch
+            )
 
     @staticmethod
-    def __draw_sample(fig: plt.Figure, axarr: plt.Axes, col_idx: int, img: torch.Tensor, title: str):
+    def __draw_sample(
+        fig: plt.Figure, axarr: plt.Axes, col_idx: int, img: torch.Tensor, title: str
+    ):
         im = axarr[col_idx].imshow(img)
         fig.colorbar(im, ax=axarr[col_idx])
         axarr[col_idx].set_title(title, fontsize=20)

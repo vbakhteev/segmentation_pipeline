@@ -18,7 +18,7 @@ def main():
     logger = get_logger(args, cfg.logging)
     pipeline_cls = get_pipeline(cfg)
     model = pipeline_cls(experiment)
-    callbacks, checkpoint_callback = get_callbacks(args, cfg)
+    callbacks, checkpoint_callback, ema_callback = get_callbacks(args, cfg)
 
     for stage_cfg in cfg.train_stages:
         stage_name = stage_cfg.name
@@ -34,6 +34,22 @@ def main():
             progress_bar_refresh_rate=1,
             num_sanity_val_steps=0,
             **cfg.lightning,
+        )
+        trainer.fit(model)
+
+    # Validate ensemble of weights
+    if ema_callback is not None:
+        # Don't update parameters
+        model.cfg.optimizer[0].lr = 1e-15
+
+        trainer = pl.Trainer(
+            callbacks=callbacks,
+            logger=logger,
+            weights_summary=None,
+            progress_bar_refresh_rate=1,
+            num_sanity_val_steps=0,
+            gpus=cfg.lightning.get("gpus", 0),
+            max_epochs=1,
         )
         trainer.fit(model)
 
