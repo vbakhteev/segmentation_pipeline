@@ -108,6 +108,9 @@ class SWACallback(cb.Callback):
         self.epoch += 1
 
     def on_train_end(self, trainer, pl_module):
+        if not self.initialized:
+            return
+
         swa_state_dict = self.weights.module.state_dict()
         pl_module.model.load_state_dict(swa_state_dict)
 
