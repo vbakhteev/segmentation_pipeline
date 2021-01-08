@@ -7,7 +7,7 @@ from .decoders import SegNet, HRNet, EncoderDecoderSMP
 from .encoders import get_encoder
 from .metrics import BaseSegmentationMetric, intersection_over_union
 from .modules import get_classification_head, get_segmentation_head
-from .utils import change_layers_dim
+from .utils import change_layers_dim, load_state_dict
 
 __all__ = [
     "get_optimizer",
@@ -62,12 +62,20 @@ def get_segmentation_model(model_cfg):
     else:
         raise KeyError(f"Segmentation model {name} is not supported for {n_dim}D")
 
-    return MultiHeadSegmentator(
+    if model_cfg.encoder_weights != "":
+        load_state_dict(model.encoder, model_cfg.encoder_weights)
+
+    model = MultiHeadSegmentator(
         model=model,
         n_dim=n_dim,
         seg_heads_cfgs=model_cfg.segmentation.heads,
         clf_heads_cfgs=model_cfg.classification.heads,
     )
+
+    if model_cfg.model_weights != "":
+        load_state_dict(model, model_cfg.model_weights, soft=True)
+
+    return model
 
 
 @change_layers_dim(
