@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 
@@ -71,3 +72,44 @@ def freeze(model):
 def unfreeze(model):
     for param in model.parameters():
         param.requires_grad = True
+
+
+def load_state_dict(model, path, soft=False):
+    checkpoint = torch.load(path, map_location="cpu")
+    if "pytorch-lightning_version" in checkpoint:
+        checkpoint = filter_lightning_stuff(checkpoint)
+
+    if soft:
+        soft_load_state_dict(model, checkpoint)
+    else:
+        model.load_state_dict(checkpoint)
+
+
+def filter_lightning_stuff(checkpoint):
+    checkpoint = checkpoint["state_dict"]
+    checkpoint = {k.replace("model.", "", 1): v for k, v in checkpoint.items()}
+    return checkpoint
+
+
+def soft_load_state_dict(model, state_dict):
+    model_state = model.state_dict()
+
+    not_loaded_params = []
+    for name, param in state_dict.items():
+        if name.startswith("module."):
+            name = name[7:]
+
+        if name not in model_state or model_state[name].shape != param.shape:
+            not_loaded_params += [name]
+            continue
+
+        if isinstance(param, nn.Parameter):
+            # backwards compatibility for serialized parameters
+            param = param.data
+        model_state[name].copy_(param)
+
+    if len(not_loaded_params):
+        print(
+            "WARNING: following params couldn't be loaded into model:",
+            not_loaded_params,
+        )

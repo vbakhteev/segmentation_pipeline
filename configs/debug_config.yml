@@ -64,6 +64,9 @@ model:
   pipeline: 'multi_task_segmentation'
   params: {'encoder_name': 'resnet50', 'in_channels': 3}
 
+  encoder_weights: ''
+  model_weights: ''
+
   activations_checkpointing: False
 
   # Also works for regression
