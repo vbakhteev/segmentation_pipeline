@@ -28,3 +28,13 @@ def metrics_to_image(metrics: dict, n_row=2) -> np.array:
     image = np.fromstring(s, np.uint8).reshape((height, width, 4))
 
     return image
+
+
+def plot_stack(stack, rows=6, cols=6, start_with=10, show_every=3):
+    fig, ax = plt.subplots(rows, cols, figsize=[12, 12])
+    for i in range(rows * cols):
+        ind = start_with + i * show_every
+        ax[int(i / rows), int(i % rows)].set_title("slice %d" % ind)
+        ax[int(i / rows), int(i % rows)].imshow(stack[ind], cmap="gray")
+        ax[int(i / rows), int(i % rows)].axis("off")
+    plt.show()
