@@ -72,10 +72,13 @@ This documentation considers segmentation task.
 
 <span style="color:red">**Warning**</span>: Number of classes always must be >=2. In binary segmentation case it is equal 2. 
 
-##### `name` - name of model
+##### `name` - name of model. You can look at available options in `models/__init__.py`
 ##### `n_dim` - number of dimensions of model and input data.
 ##### `pipeline` - which pipeline to load from `pipelines/`
 ##### `params` - dict of parameters that will be passed into model. For segmentation task it will be passed into child class of EncoderDecoder. `params` are specific to model's `name`.
+##### `encoder_weights` - path to pretrained weights of encoder.
+##### `model_weights` - path to pretrained weights of the whole model. Heads of model and weights can be different. In this case weights for head are just omitted.
+##### `activations_checkpointing` - use activation checkpointing to reduce memory consumption by 3-5x.
 ##### `classification`/`segmentation` - defines project-specific modules.
 ##### `default_criterion` - Default criterion for some task.
 ##### `heads: [head]` - list of model's heads.
@@ -112,6 +115,11 @@ Supported callbacks:
 + `GPUStatsMonitor`
 + `GradientAccumulationScheduler`
 + `LearningRateMonitor`
++ `FreezeEncoderCallback`
++ `FreezeDecoderCallback`
++ `Log2DSegmentationResultsCallback`
++ `EMACallback`
++ `SWACallback`
 
 ### logging
 Which logger to use.
