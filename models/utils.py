@@ -113,3 +113,8 @@ def soft_load_state_dict(model, state_dict):
             "WARNING: following params couldn't be loaded into model:",
             not_loaded_params,
         )
+
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group["lr"]
