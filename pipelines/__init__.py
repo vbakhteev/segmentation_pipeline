@@ -19,6 +19,7 @@ available_callbacks = {
     "Log2DSegmentationResultsCallback": Log2DSegmentationResultsCallback,
     "EMACallback": EMACallback,
     "SWACallback": SWACallback,
+    "WarmupLRCallback": WarmupLRCallback,
 }
 
 

@@ -145,6 +145,7 @@ scheduler: [{
 callbacks: [
   {'name': 'ModelCheckpoint', 'monitor': 'mask_human@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
   {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
+  {'name': 'WarmupLRCallback', 'iterations': 5},
   ]
 
 logging:

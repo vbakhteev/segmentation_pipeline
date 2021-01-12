@@ -5,7 +5,7 @@ import torch
 from timm.utils.model_ema import ModelEmaV2
 from pytorch_lightning import callbacks as cb
 
-from models.utils import freeze, unfreeze
+from models.utils import freeze, unfreeze, get_lr
 
 
 class EarlyStopping(cb.EarlyStopping):
@@ -41,8 +41,53 @@ class FreezeDecoderCallback(cb.Callback):
             self.epochs = 0
 
 
+class WarmupLRCallback(cb.Callback):
+    """
+    Linear learning rate warmup.
+    Warning: Currently work only with one optimizer and single lr for all weights.
+    Args:
+        iterations: How many iterations to warmup. Better to keep iterations <= steps_per_epoch
+        start_lr: Initial value of Learning rate.
+    """
+
+    def __init__(self, iterations: int, start_lr=1e-6):
+        self.iterations = iterations
+        self.start_lr = start_lr
+
+        self.orig_lr = None
+        self.it = 0
+
+    def on_epoch_start(self, trainer, pl_module):
+        self.orig_lr = self._get_lr(trainer)
+
+    def on_train_batch_start(
+        self, trainer, pl_module, batch, batch_idx, dataloader_idx
+    ):
+        if self.it > self.iterations:
+            return
+        if self.it == self.iterations:
+            self._set_lr(trainer, self.orig_lr)
+            self.it += 1
+            return
+
+        new_lr = self.start_lr + (self.orig_lr - self.start_lr) * (
+            self.it / self.iterations
+        )
+        self._set_lr(trainer, new_lr)
+        self.it += 1
+
+    def _set_lr(self, trainer, lr: float) -> None:
+        opt = trainer.optimizers[0]
+        for g in opt.param_groups:
+            g["lr"] = lr
+
+    def _get_lr(self, trainer) -> float:
+        return get_lr(trainer.optimizers[0])
+
+
 class EMACallback(cb.Callback):
     """
+    Exponential Moving Average
     Args:
         update_nth_iter: Weights updates at each nth train iteration.
         decay: Decay of model's weights.
@@ -81,6 +126,7 @@ class EMACallback(cb.Callback):
 
 class SWACallback(cb.Callback):
     """
+    Stochastic Weight Averaging
     Args:
         start_epoch: From which epoch to collect weights.
         swa_lr: learning rate
