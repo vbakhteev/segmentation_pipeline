@@ -32,7 +32,7 @@ datasets:
           shift_limit: 0.05
           p: 1
 
-      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
     - id: 1
       name: faces
@@ -46,7 +46,7 @@ datasets:
         - name: ShiftScaleRotate
           shift_limit: 0.05
           p: 1
-      post_transforms: [ { 'name': 'Resize', 'height': 64, 'width': 64 }, { 'name': 'ToTensor' } ]
+      post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
 
 
 dataloader:
@@ -110,7 +110,6 @@ model:
         head: 'conv_upsample'
         params:
           classes: 2
-
           kernel_size: 3
 
       - datasets_ids: [1]
@@ -123,7 +122,6 @@ model:
         head: 'conv_upsample'
         params:
           classes: 4
-
           kernel_size: 3
 
 
@@ -159,11 +157,11 @@ lightning:
 
 # Parameters defined in stages are used to update fields defined above
 train_stages:
-  - name: res-64
+  - name: res-128
     lightning:
       max_epochs: 20
 
-  - name: res-128
+  - name: res-256
     lightning:
       max_epochs: 50
 
@@ -179,4 +177,4 @@ train_stages:
     datasets:
       list:
         - id: 0
-          post_transforms: [ { 'name': 'Resize', 'height': 128, 'width': 128 }, { 'name': 'ToTensor' } ]
+          post_transforms: [ { 'name': 'Resize', 'height': 256, 'width': 256 }, { 'name': 'ToTensor' } ]
