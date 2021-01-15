@@ -8,6 +8,7 @@ from utils import (
     update_config,
     get_logger,
     log_to_tg,
+    TelegramLogger,
 )
 
 
@@ -63,4 +64,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        tg_logger = TelegramLogger()
+        tg_logger.send_message(str(e))
