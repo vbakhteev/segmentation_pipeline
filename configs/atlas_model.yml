@@ -21,7 +21,12 @@ datasets:
       use_to_validate: True
 
       pre_transforms: []
-      augmentations: []
+      augmentations:
+        - name: RandomNoise3d
+          std: 0.05
+        - name: RandomFlip3d
+          axis: 0
+
       post_transforms: # 197, 233, 189
         - name: Crop3d
           size: [ 192, 224, 189 ]
@@ -44,6 +49,9 @@ model:
   n_dim: 3
   pipeline: 'multi_task_segmentation'
   params: {'encoder_name': 'resnet50', 'in_channels': 1}
+
+  encoder_weights: ''
+  model_weights: 'checkpoints/atlas_model_January14_08:10:04/epoch=21.ckpt'
 
   activations_checkpointing: True
 
@@ -92,7 +100,7 @@ optimizer: [{
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
   'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
-  'T_0': 2, 'T_mult': 2
+  'T_0': 10, 'T_mult': 1
 }]
 
 ########################################################
@@ -117,4 +125,4 @@ lightning:
 train_stages:
   - name: training
     lightning:
-      max_epochs: 20
+      max_epochs: 100

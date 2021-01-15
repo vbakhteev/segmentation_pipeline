@@ -115,6 +115,36 @@ class Resize3d(albu.DualTransform):
         return ("size",)
 
 
+class RandomFlip3d(albu.DualTransform):
+    def __init__(self, axis: int, always_apply=False, p=0.5):
+        super().__init__(always_apply, p)
+        self.axis = axis
+
+    def apply(self, img, **params):
+        return np.flip(img, axis=self.axis)
+
+    def apply_to_mask(self, img, **params):
+        return np.flip(img, axis=self.axis)
+
+    def get_transform_init_args_names(self):
+        return ("axis",)
+
+
+class RandomNoise3d(albu.ImageOnlyTransform):
+    def __init__(self, mean: float = 0, std: float = 0.25, always_apply=False, p=1.0):
+        super().__init__(always_apply, p)
+        self.mean = mean
+        self.std = std
+
+    def apply(self, img, **params):
+        noise = np.random.normal(loc=self.mean, scale=self.std, size=img.shape)
+        img = img.astype(float) + noise
+        return img
+
+    def get_transform_init_args_names(self):
+        return ("mean", "std")
+
+
 if __name__ == "__main__":
     # For pycharm to not remove imports during imports optimization
     ToTensor()
