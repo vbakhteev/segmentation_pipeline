@@ -2,6 +2,7 @@ from torch import nn
 
 from .modules import get_segmentation_head, get_classification_head
 from .decoders.base_decoder import EncoderDecoder
+from .utils import initialize_decoder, initialize_head
 
 
 class MultiHeadSegmentator(nn.Module):
@@ -35,6 +36,13 @@ class MultiHeadSegmentator(nn.Module):
                 n_dim=n_dim,
                 **head_cfg.params,
             )
+
+        self.initialize()
+
+    def initialize(self):
+        initialize_decoder(self.model.decoder)
+        initialize_head(self.seg_heads)
+        initialize_head(self.clf_heads)
 
     def forward(self, images):
         encoder_features, decoder_output = self.model(images)

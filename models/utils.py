@@ -64,6 +64,32 @@ def change_layers_dim(
     return decorator
 
 
+def initialize_decoder(module):
+    for m in module.modules():
+
+        if isinstance(m, nn.modules.conv._ConvNd):
+            nn.init.kaiming_uniform_(m.weight, mode="fan_in", nonlinearity="relu")
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
+        elif isinstance(m, nn.modules.batchnorm._BatchNorm):
+            nn.init.constant_(m.weight, 1)
+            nn.init.constant_(m.bias, 0)
+
+        elif isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
+
+def initialize_head(module):
+    for m in module.modules():
+        if isinstance(m, (nn.Linear, nn.modules.conv._ConvNd)):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+
+
 def freeze(model):
     for param in model.parameters():
         param.requires_grad = False
