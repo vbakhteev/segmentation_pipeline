@@ -54,17 +54,18 @@ class BaseSegmentationMetric(pl.metrics.Metric):
             # calculate metric for each specified threshold
             for i, threshold in enumerate(self.thresholds):
                 preds_, target_ = self._input_format(preds, target, threshold)
-                scores = self.metric_fn(preds_, target_)
+                scores = calc_metric_per_sample(preds_, target_, self.metric_fn)
                 self.scores_sum[i] += torch.sum(scores)
         else:
             preds_, target_ = self._input_format(preds, target)
-            scores = self.metric_fn(preds_, target_)
+            scores = calc_metric_per_sample(preds_, target_, self.metric_fn)
             self.scores_sum += torch.sum(scores)
 
         self.total += scores.shape[0] if len(scores.shape) else 1
 
     def compute(self):
         if self.num_classes == 2:
+            # TODO return best threshold. self.thresholds[argmax(scores)]
             return (self.scores_sum / self.total).max()
         else:
             return self.scores_sum / self.total
@@ -93,13 +94,17 @@ def ohe_tensor(tensor, num_classes):
     return ohe
 
 
-def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
-    """Intersection over union metric
+def calc_metric_per_sample(
+    outputs: torch.Tensor, labels: torch.Tensor, metric_fn: Callable
+):
+    """Calculates metric for each class separately and averages scores.
     Args:
-        outputs (torch.tensor): Outputs of model. (N, C, H, W) or (N, C, H, W, Z)
-        labels (torch.tensor): Ground truth.      (N, C, H, W) or (N, C, H, W, Z)
+        outputs: Outputs of model. (N, C, H, W) or (N, C, H, W, Z)
+        labels: Ground truth.      (N, C, H, W) or (N, C, H, W, Z)
+        metric_fn: metric function that takes binary outputs and labels of shape (N, -1)
+        and produces scores for each sample.
     returns:
-         torch.tensor: vector of IoU for each sample
+         torch.tensor: vector of IoU for each sample. (N,)
     """
     if outputs.shape != labels.shape:
         raise AttributeError(f"Shapes not equal: {outputs.shape} != {labels.shape}")
@@ -108,7 +113,7 @@ def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
     labels = labels.int()
     bs = outputs.shape[0]
 
-    ious = []
+    scores = []
     for class_i in range(
         1, outputs.shape[-1]
     ):  # Start from 1 to not consider background
@@ -117,10 +122,36 @@ def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
 
         outputs_class = outputs_class.reshape((bs, -1))
         labels_class = labels_class.reshape((bs, -1))
-        intersection = (outputs_class & labels_class).sum(1).float()
-        union = (outputs_class | labels_class).sum(1).float()
 
-        iou = (intersection + EPS) / (union + EPS)
-        ious += [iou]
-    iou = torch.stack(ious).mean(0)
+        scores_per_sample = metric_fn(outputs_class, labels_class)
+        scores += [scores_per_sample]
+
+    result = torch.stack(scores).mean(0)  # (n_classes, n_samples) -> (n_samples,)
+    return result
+
+
+def intersection_over_union(outputs: torch.tensor, labels: torch.tensor):
+    """Intersection over union metric
+    Args:
+        outputs: Outputs of model. (N, -1)
+        labels: Ground truth.      (N, -1)
+    returns:
+         torch.tensor: vector of IoU for each sample. (N,)
+    """
+    intersection = (outputs & labels).sum(1).float()
+    union = (outputs | labels).sum(1).float()
+    iou = (intersection + EPS) / (union + EPS)
     return iou
+
+
+def dice_score(outputs: torch.tensor, labels: torch.tensor):
+    """Intersection over union metric
+    Args:
+        outputs: Outputs of model. (N, -1)
+        labels: Ground truth.      (N, -1)
+    returns:
+         torch.tensor: vector of IoU for each sample. (N,)
+    """
+    intersection = (outputs & labels).sum(1).float()
+    dice = (2 * intersection + EPS) / (outputs.sum(1) + labels.sum(1) + EPS)
+    return dice

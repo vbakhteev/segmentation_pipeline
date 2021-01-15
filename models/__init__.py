@@ -5,7 +5,7 @@ from .base_models import MultiHeadSegmentator
 from .criterions import get_criterion
 from .decoders import SegNet, HRNet, BiFPN, EncoderDecoderSMP
 from .encoders import get_encoder
-from .metrics import BaseSegmentationMetric, intersection_over_union
+from .metrics import BaseSegmentationMetric, intersection_over_union, dice_score
 from .modules import get_classification_head, get_segmentation_head
 from .utils import change_layers_dim, load_state_dict
 
@@ -34,7 +34,10 @@ available_models_segmentation = {
     "BiFPN": BiFPN,
 }
 
-segmentation_metrics = {"intersection_over_union": intersection_over_union}
+segmentation_metrics = {
+    "intersection_over_union": intersection_over_union,
+    "dice_score": dice_score,
+}
 
 
 def get_segmentation_model(model_cfg):
