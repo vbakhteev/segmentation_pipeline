@@ -14,12 +14,12 @@ from models import (
 class BasePipeline(pl.LightningModule):
     """Parent class for pipelines with single model, dataset, optimizer, scheduler"""
 
-    def __init__(self, experiment):
+    def __init__(self, cfg):
         super().__init__()
 
         self.cfg = None
         self.criterion = None
-        self.update_config(experiment["cfg"])
+        self.update_config(cfg)
 
         self.logging_names = []
         self.logged_metrics = dict()
