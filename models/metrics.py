@@ -64,11 +64,13 @@ class BaseSegmentationMetric(pl.metrics.Metric):
         self.total += scores.shape[0] if len(scores.shape) else 1
 
     def compute(self):
+        result = self.scores_sum / self.total
+
         if self.num_classes == 2:
-            # TODO return best threshold. self.thresholds[argmax(scores)]
-            return (self.scores_sum / self.total).max()
+            # best_threshold = self.thresholds[result.argmax()]
+            return result.max()
         else:
-            return self.scores_sum / self.total
+            return result
 
     def _input_format(self, preds, target, threshold=None):
         if self.num_classes == 2:

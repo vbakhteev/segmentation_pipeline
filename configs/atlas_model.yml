@@ -51,7 +51,7 @@ model:
   params: {'encoder_name': 'resnet50', 'in_channels': 1}
 
   encoder_weights: ''
-  model_weights: 'checkpoints/atlas_model_January14_08:10:04/epoch=21.ckpt'
+  model_weights: ''
 
   activations_checkpointing: True
 
@@ -73,8 +73,8 @@ model:
 
         # In lightning module metrics will have name {target}@{metric_name}
         metrics: [
-          { 'name': 'intersection_over_union', 'num_classes': 2,
-            'thresholds': [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5] },
+          { 'name': 'dice_score', 'num_classes': 2,
+            'thresholds': [ 0.1, 0.2, 0.3, 0.4, 0.5 ] },
         ]
 
         head: 'conv_upsample'
@@ -85,7 +85,7 @@ model:
         criterion:
           cls: 'pytorch_toolbelt.losses.JointLoss'
           first:
-            cls: 'pytorch_toolbelt.losses.JaccardLoss'
+            cls: 'pytorch_toolbelt.losses.DiceLoss'
             mode: 'multiclass'
           second:
             cls: 'pytorch_toolbelt.losses.FocalLoss'
@@ -94,13 +94,13 @@ model:
 
 optimizer: [{
   'cls': 'torch.optim.Adam',
-  'lr': 0.0001
+  'lr': 0.001
 }]
 
 # For some schedulers, you need to rewrite the place where it is called
 scheduler: [{
   'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
-  'T_0': 10, 'T_mult': 1
+  'T_0': 2, 'T_mult': 2
 }]
 
 ########################################################
@@ -108,7 +108,7 @@ scheduler: [{
 ########################################################
 
 callbacks: [
-  {'name': 'ModelCheckpoint', 'monitor': 'mask_atlas@intersection_over_union', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_atlas@dice_score', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
   {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
   ]
 
@@ -125,4 +125,4 @@ lightning:
 train_stages:
   - name: training
     lightning:
-      max_epochs: 100
+      max_epochs: 126
