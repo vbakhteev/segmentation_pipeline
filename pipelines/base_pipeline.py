@@ -38,6 +38,10 @@ class BasePipeline(pl.LightningModule):
         self.criterion = None
         raise NotImplementedError
 
+    ########################
+    # TRAINING RELATED HOOKS
+    ########################
+
     def forward(self, input_):
         return self.model(input_)
 
@@ -67,6 +71,10 @@ class BasePipeline(pl.LightningModule):
     def test_epoch_end(self, outputs):
         raise NotImplementedError
 
+    #########################
+    # OPTIMIZER RELATED HOOKS
+    #########################
+
     def configure_optimizers(self):
         optimizer = get_optimizer(self.model.parameters(), self.cfg.optimizer[0])
         scheduler = get_scheduler(optimizer, self.cfg.scheduler[0])
@@ -78,9 +86,9 @@ class BasePipeline(pl.LightningModule):
         return result
 
     def optimizer_zero_grad(self, current_epoch, batch_idx, optimizer, opt_idx):
-        # TODO get params from optimizer
-        for param in self.model.parameters():
-            param.grad = None
+        for param_group in optimizer.param_groups:
+            for param in param_group["params"]:
+                param.grad = None
 
     ####################
     # DATA RELATED HOOKS
