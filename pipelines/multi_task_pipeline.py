@@ -1,17 +1,22 @@
+from typing import Tuple
+
 from models import get_criterion, get_metrics
-from models import get_segmentation_model
 from .base_pipeline import BasePipeline
 
 
-class MultiTaskSegmentator(BasePipeline):
-    def __init__(self, experiment):
-        super().__init__(experiment)
-        self.model = get_segmentation_model(self.cfg.model)
+class MultiTaskPipeline(BasePipeline):
+    @staticmethod
+    def pipeline_tasks() -> Tuple[str]:
+        """Returns names of tasks for specific pipeline. These tasks are matched to cfg.model.[task]
+        For example: Segmentation pipeline implements both classification and segmentation, so
+        result of this function would be: (`classification`, `segmentation`)
+        """
+        raise NotImplementedError
 
     def setup_logging(self):
         self.logging_names = []
 
-        for task in ("classification", "segmentation"):
+        for task in self.pipeline_tasks():
             task_cfg = self.cfg.model[task]
             for head_cfg in task_cfg.heads:
                 if "metrics" not in head_cfg:
@@ -28,10 +33,11 @@ class MultiTaskSegmentator(BasePipeline):
             k: [] for k in ["train_loss", "valid_loss"] + self.logging_names
         }
 
-    def update_criterion(self):
-        # (dataset_id, target) -> criterion
+    def update_criterion(self) -> None:
+        """Setup (dataset, target) -> criterion mapping
+        """
         self.criterion = {}
-        for task in ("classification", "segmentation"):
+        for task in self.pipeline_tasks():
             task_cfg = self.cfg.model.get(task)
             default_criterion_cfg = task_cfg.get("default_criterion", None)
 
