@@ -21,3 +21,4 @@ easydict==1.9
 yacs==0.1.8
 requests==2.25.1
 pre-commit==2.9.3
+git+https://github.com/LiyuanLucasLiu/RAdam.git

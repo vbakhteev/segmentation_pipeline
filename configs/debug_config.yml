@@ -128,7 +128,7 @@ model:
 
 
 optimizer: [{
-  'cls': 'torch.optim.Adam',
+  'cls': 'radam.RAdam',
   'lr': 0.001
 }]
 
