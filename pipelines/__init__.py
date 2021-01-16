@@ -28,7 +28,8 @@ def get_pipeline(cfg):
     if name not in available_pipelines:
         raise KeyError(f"Pipeline {name} is not supported")
 
-    return available_pipelines[name]
+    pipeline_cls = available_pipelines[name]
+    return pipeline_cls(cfg)
 
 
 def get_callbacks(args, cfg):

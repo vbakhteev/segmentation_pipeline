@@ -19,6 +19,7 @@ datasets:
       root: '/home/vladislav/data/Human-Segmentation-Dataset'
       use_to_train: True
       use_to_validate: True
+      use_to_test: True
 
       pre_transforms: []
 
@@ -39,6 +40,7 @@ datasets:
       root: '/home/vladislav/data/FASSEG-repository'
       use_to_train: True
       use_to_validate: False
+      use_to_test: False
 
       pre_transforms: [ ]
       augmentations:

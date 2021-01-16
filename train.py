@@ -17,8 +17,7 @@ def main():
     args, cfg = experiment["args"], experiment["cfg"]
 
     logger = get_logger(args, cfg.logging)
-    pipeline_cls = get_pipeline(cfg)
-    model = pipeline_cls(experiment)
+    model = get_pipeline(cfg)
     callbacks, checkpoint_callback, weight_ensemble_callback = get_callbacks(args, cfg)
 
     for stage_cfg in cfg.train_stages:

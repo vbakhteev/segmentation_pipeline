@@ -14,12 +14,12 @@ from models import (
 class BasePipeline(pl.LightningModule):
     """Parent class for pipelines with single model, dataset, optimizer, scheduler"""
 
-    def __init__(self, experiment):
+    def __init__(self, cfg):
         super().__init__()
 
         self.cfg = None
         self.criterion = None
-        self.update_config(experiment["cfg"])
+        self.update_config(cfg)
 
         self.logging_names = []
         self.logged_metrics = dict()
@@ -37,6 +37,10 @@ class BasePipeline(pl.LightningModule):
     def update_criterion(self):
         self.criterion = None
         raise NotImplementedError
+
+    ########################
+    # TRAINING RELATED HOOKS
+    ########################
 
     def forward(self, input_):
         return self.model(input_)
@@ -62,10 +66,17 @@ class BasePipeline(pl.LightningModule):
             self.logged_metrics[metric_name] += [metric_o.compute().item()]
 
     def test_step(self, batch, batch_idx):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "`test_step` is project-specific. Create new pipeline than inherits "
+            "from pipeline you trained on, and implement `test_step` and `test_epoch_end`"
+        )
 
     def test_epoch_end(self, outputs):
         raise NotImplementedError
+
+    #########################
+    # OPTIMIZER RELATED HOOKS
+    #########################
 
     def configure_optimizers(self):
         optimizer = get_optimizer(self.model.parameters(), self.cfg.optimizer[0])
@@ -78,9 +89,9 @@ class BasePipeline(pl.LightningModule):
         return result
 
     def optimizer_zero_grad(self, current_epoch, batch_idx, optimizer, opt_idx):
-        # TODO get params from optimizer
-        for param in self.model.parameters():
-            param.grad = None
+        for param_group in optimizer.param_groups:
+            for param in param_group["params"]:
+                param.grad = None
 
     ####################
     # DATA RELATED HOOKS
