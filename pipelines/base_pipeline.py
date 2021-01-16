@@ -78,6 +78,7 @@ class BasePipeline(pl.LightningModule):
         return result
 
     def optimizer_zero_grad(self, current_epoch, batch_idx, optimizer, opt_idx):
+        # TODO get params from optimizer
         for param in self.model.parameters():
             param.grad = None
 
