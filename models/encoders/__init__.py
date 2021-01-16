@@ -1,8 +1,13 @@
+from typing import Optional
+
 from .backbones_2d import get_backbone_2d
 from .backbones_3d import get_backbone_3d
 
 
-def get_encoder(encoder_name, n_dim, num_channels):
+def get_encoder(encoder_name: Optional[str], n_dim: int, num_channels: int):
+    if encoder_name is None:
+        return None
+
     if n_dim == 2:
         model = get_backbone_2d(model_name=encoder_name)
     elif n_dim == 3:
