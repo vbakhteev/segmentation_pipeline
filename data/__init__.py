@@ -90,14 +90,20 @@ def get_datasets(
 
     datasets, dataset_ids, dataset_names = [], [], []
     for dataset_cfg in cfg.datasets.list:
-        if stage == "train" and not dataset_cfg.use_to_train:
-            continue
-        if stage == "valid" and not dataset_cfg.use_to_validate:
+        if (
+            (stage == "train" and not dataset_cfg.use_to_train) or
+            (stage == "valid" and not dataset_cfg.use_to_validate) or
+            (stage == "test" and not dataset_cfg.use_to_test)
+        ):
             continue
 
         data_transforms = transforms_ or get_transforms(dataset_cfg)[stage]
         dataset_cls = find_dataset_using_name(dataset_cfg.name)
-        dataset_params = dataset_cls.prepare_data(dataset_cfg)[stage]
+
+        datasets_params = dataset_cls.prepare_data(dataset_cfg)
+        if stage not in datasets_params:
+            raise NotImplementedError(f"Stage `{stage}` is not found in your [dataset_name].prepare_data")
+        dataset_params = datasets_params[stage]
 
         dataset = dataset_cls(
             root=dataset_cfg.root,

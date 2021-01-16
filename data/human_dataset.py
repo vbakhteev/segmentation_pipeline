@@ -65,6 +65,7 @@ class HumanDataset(BaseDataset):
         result = dict(
             train={"filenames": train_filenames},
             valid={"filenames": valid_filenames},
+            test={"filenames": valid_filenames},
         )
         return result
 

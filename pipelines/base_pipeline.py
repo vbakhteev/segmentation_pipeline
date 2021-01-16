@@ -66,7 +66,10 @@ class BasePipeline(pl.LightningModule):
             self.logged_metrics[metric_name] += [metric_o.compute().item()]
 
     def test_step(self, batch, batch_idx):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "`test_step` is project-specific. Create new pipeline than inherits "
+            "from pipeline you trained on, and implement `test_step` and `test_epoch_end`"
+        )
 
     def test_epoch_end(self, outputs):
         raise NotImplementedError
