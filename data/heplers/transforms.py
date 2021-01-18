@@ -3,6 +3,7 @@ import pydoc
 import albumentations as albu
 import numpy as np
 import torch
+from skimage import exposure
 from albumentations.pytorch import ToTensor, ToTensorV2
 
 from data.heplers.functional_transforms import resize_mask3d, resize_img3d
@@ -10,6 +11,8 @@ from data.heplers.functional_transforms import resize_mask3d, resize_img3d
 
 __all__ = [
     "get_transforms",
+    "EqualizeHist",
+    "EqualizeAdaptHist",
     "ToTensor3D",
     "Crop3d",
     "Resize3d",
@@ -64,6 +67,24 @@ def get_albu_object(name, *args, **kwargs):
         raise KeyError(f"Transform {name} is not supported")
 
     return cls(*args, **kwargs)
+
+
+class EqualizeHist(albu.ImageOnlyTransform):
+    def __init__(self, always_apply=True, p=1.0):
+        super().__init__(always_apply=always_apply, p=p)
+
+    def apply(self, img, **params):
+        return exposure.equalize_hist(img)
+
+
+class EqualizeAdaptHist(albu.ImageOnlyTransform):
+    def __init__(self, always_apply=True, p=1.0):
+        super().__init__(always_apply=always_apply, p=p)
+
+    def apply(self, img, **params):
+        img -= img.min()
+        img /= img.max()
+        return exposure.equalize_adapthist(img)
 
 
 class ToTensor3D(albu.BasicTransform):
