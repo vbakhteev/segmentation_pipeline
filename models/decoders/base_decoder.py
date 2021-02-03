@@ -1,3 +1,5 @@
+from typing import Optional
+
 import segmentation_models_pytorch.base as smp_base
 import torch
 from torch import nn
@@ -16,7 +18,7 @@ class BaseDecoder(nn.Module):
 class EncoderDecoder(nn.Module):
     def __init__(
         self,
-        encoder_name: str,
+        encoder_name: Optional[str],
         n_dim: int,
         in_channels: int,
         checkpointing: bool = False,
@@ -45,7 +47,7 @@ class EncoderDecoder(nn.Module):
 class EncoderDecoderSMP(EncoderDecoder):
     def __init__(self, model: smp_base.SegmentationModel, checkpointing: bool = False):
         # Useless mock parameters to init nn.Module. Ignore them
-        super().__init__("resnet18", 2, 1, checkpointing)
+        super().__init__(None, 2, 3, checkpointing)
         self.encoder = model.encoder
         self.decoder = model.decoder
         self.decoder.out_channels = self.get_decoder_out_channels()
