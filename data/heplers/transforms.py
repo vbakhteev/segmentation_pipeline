@@ -9,19 +9,25 @@ from albumentations.pytorch import ToTensor, ToTensorV2
 from albumentations.augmentations import functional as F
 from albumentations.augmentations import bbox_utils as bbu
 
-from data.heplers.functional_transforms import resize_mask3d, resize_img3d
+from data.heplers.functional_transforms import (
+    resize_mask3d,
+    resize_img3d,
+    pad_to_size_3d,
+)
 
 
 __all__ = [
     "get_transforms",
     "EqualizeHist",
     "EqualizeAdaptHist",
+    "Windowing",
     "ToTensor3D",
     "Crop3d",
     "Resize3d",
     "RandomFlip3d",
     "RandomNoise3d",
     "PadToSquare",
+    "PadToSize3d",
 ]
 
 
@@ -91,6 +97,18 @@ class EqualizeAdaptHist(albu.ImageOnlyTransform):
         return exposure.equalize_adapthist(img)
 
 
+class Windowing(albu.ImageOnlyTransform):
+    def __init__(self, min_value=-np.inf, max_value=np.inf, always_apply=True, p=1.0):
+        super().__init__(always_apply=always_apply, p=p)
+        self.min_value = min_value
+        self.max_value = max_value
+
+    def apply(self, img, **params):
+        img = np.minimum(img, self.max_value)
+        img = np.maximum(img, self.min_value)
+        return img
+
+
 class PadToSquare(albu.DualTransform):
     """Pad side of the image / max if side is less than desired number.
     Args:
@@ -139,27 +157,60 @@ class PadToSquare(albu.DualTransform):
             w_pad_right = 0
 
         params.update(
-            {"pad_top": h_pad_top, "pad_bottom": h_pad_bottom, "pad_left": w_pad_left, "pad_right": w_pad_right}
+            {
+                "pad_top": h_pad_top,
+                "pad_bottom": h_pad_bottom,
+                "pad_left": w_pad_left,
+                "pad_right": w_pad_right,
+            }
         )
         return params
 
     def apply(self, img, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, **params):
         return F.pad_with_params(
-            img, pad_top, pad_bottom, pad_left, pad_right, border_mode=self.border_mode, value=self.value
+            img,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
+            border_mode=self.border_mode,
+            value=self.value,
         )
 
-    def apply_to_mask(self, img, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, **params):
+    def apply_to_mask(
+        self, img, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, **params
+    ):
         return F.pad_with_params(
-            img, pad_top, pad_bottom, pad_left, pad_right, border_mode=self.border_mode, value=self.mask_value
+            img,
+            pad_top,
+            pad_bottom,
+            pad_left,
+            pad_right,
+            border_mode=self.border_mode,
+            value=self.mask_value,
         )
 
-    def apply_to_bbox(self, bbox, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, rows=0, cols=0, **params):
+    def apply_to_bbox(
+        self,
+        bbox,
+        pad_top=0,
+        pad_bottom=0,
+        pad_left=0,
+        pad_right=0,
+        rows=0,
+        cols=0,
+        **params,
+    ):
         x_min, y_min, x_max, y_max = bbu.denormalize_bbox(bbox, rows, cols)
         bbox = x_min + pad_left, y_min + pad_top, x_max + pad_left, y_max + pad_top
-        return bbu.normalize_bbox(bbox, rows + pad_top + pad_bottom, cols + pad_left + pad_right)
+        return bbu.normalize_bbox(
+            bbox, rows + pad_top + pad_bottom, cols + pad_left + pad_right
+        )
 
     # skipcq: PYL-W0613
-    def apply_to_keypoint(self, keypoint, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, **params):
+    def apply_to_keypoint(
+        self, keypoint, pad_top=0, pad_bottom=0, pad_left=0, pad_right=0, **params
+    ):
         x, y, angle, scale = keypoint
         return x + pad_left, y + pad_top, angle, scale
 
@@ -169,6 +220,27 @@ class PadToSquare(albu.DualTransform):
             "value",
             "mask_value",
         )
+
+
+class PadToSize3d(albu.DualTransform):
+    def __init__(
+        self,
+        size,
+        value=0,
+        mask_value=0,
+        always_apply=True,
+        p=1.0,
+    ):
+        super().__init__(always_apply, p)
+        self.size = tuple(size)
+        self.value = value
+        self.mask_value = mask_value
+
+    def apply(self, img, **params):
+        return pad_to_size_3d(img, self.size, self.value)
+
+    def apply_to_mask(self, img, **params):
+        return pad_to_size_3d(img, self.size, self.mask_value)
 
 
 class ToTensor3D(albu.BasicTransform):

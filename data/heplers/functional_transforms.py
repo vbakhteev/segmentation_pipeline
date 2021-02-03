@@ -44,3 +44,20 @@ def ohe_ndarray(array):
     ohe = np.eye(n_values)[values]
 
     return ohe.reshape(*shape, n_values)
+
+
+def pad_to_size_3d(img, result_size, value=0):
+    new_shape = [s for s in result_size]
+    if len(img.shape) == 4:
+        new_shape.append(img.shape[3])
+    new_img = np.full(new_shape, value, dtype=img.dtype)
+
+    shape_diff = np.array(new_shape) - img.shape
+    pad0, pad1, pad2 = shape_diff[0] // 2, shape_diff[1] // 2, shape_diff[2] // 2
+    new_img[
+        pad0 : pad0 + img.shape[0],
+        pad1 : pad1 + img.shape[1],
+        pad2 : pad2 + img.shape[2],
+    ] = img.copy()
+
+    return new_img
