@@ -1,0 +1,128 @@
+defaults:
+  seed: 0
+
+# specifics about experiment that will be logged to telegram
+description: "Segmentation of lesions on ISLES dataset"
+
+
+########################################################
+################### Dataset settings ###################
+########################################################
+
+datasets:
+  # Steps per epoch for each dataset. Total steps = steps_per_epoch * len(datasets.list)
+  steps_per_epoch: 19  # 75 samples in train
+
+  list:
+    - id: 0
+      name: isles                        # Used to get NameDataset from data/name_dataset.py
+      root: '/home/vladislav/data/ISLES'
+      use_to_train: True
+      use_to_validate: True
+      image_type: 'CT'   # CT, CT_4DPWI, CT_CBF, CT_CBV, CT_MTT, CT_Tmax
+
+      pre_transforms:
+        - name: Windowing
+          max_value: 150
+
+      augmentations:
+        - name: RandomFlip3d
+          axis: 0
+
+      post_transforms:
+        - name: PadToSize3d
+          size: [ 256, 256, 32 ]
+        - name: ToTensor3D
+
+
+dataloader:
+  num_workers: 8
+  batch_size: 4
+  pin_memory: True
+
+########################################################
+#################### Model settings ####################
+########################################################
+
+model:
+  name: 'Unet'
+  n_dim: 3
+  pipeline: 'multi_task_segmentation'
+  params: {'encoder_name': 'resnet34', 'in_channels': 1}
+
+  encoder_weights: ''
+  model_weights: ''
+
+  activations_checkpointing: True
+
+  # Also works for regression
+  classification:
+    default_criterion:
+      cls: 'torch.nn.BCEWithLogitsLoss'
+
+    heads: []
+
+  segmentation:
+    default_criterion:
+      cls: 'pytorch_toolbelt.losses.SoftCrossEntropyLoss'
+      smooth_factor: 0.1
+
+    heads:
+      - datasets_ids: [0]
+        target: 'mask_isles_CT'
+
+        # In lightning module metrics will have name {target}@{metric_name}
+        metrics: [
+          { 'name': 'dice_score', 'num_classes': 2,
+            'thresholds': [ 0.1, 0.2, 0.3, 0.4, 0.5 ] },
+        ]
+
+        head: 'conv_upsample'
+        params:
+          classes: 2
+          kernel_size: 3
+
+        criterion:
+          cls: 'pytorch_toolbelt.losses.JointLoss'
+          first:
+            cls: 'pytorch_toolbelt.losses.DiceLoss'
+            mode: 'multiclass'
+          second:
+            cls: 'pytorch_toolbelt.losses.FocalLoss'
+
+
+
+optimizer: [{
+  'cls': 'torch.optim.Adam',
+  'lr': 0.001
+}]
+
+# For some schedulers, you need to rewrite the place where it is called
+scheduler: [{
+  'cls': 'torch.optim.lr_scheduler.CosineAnnealingWarmRestarts',
+  'T_0': 2, 'T_mult': 2
+}]
+
+########################################################
+################## Training settings ###################
+########################################################
+
+callbacks: [
+  {'name': 'ModelCheckpoint', 'monitor': 'mask_isles_CT@dice_score', 'mode': 'max', 'save_last': False, 'save_top_k': 1},
+#  {'name': 'EarlyStopping', 'monitor': 'valid_loss', 'mode': 'min', 'patience': 15},
+  ]
+
+logging:
+  name: null   # [null | csv_logs | mlflow | neptune | comet | tensorboard | test_tube | swandb]
+  params: {}
+
+# You can add any argument for pytorch_lightning.Trainer
+lightning:
+  gpus: 1
+  num_nodes: 1
+
+# Parameters defined in stages are used to update fields defined above
+train_stages:
+  - name: training
+    lightning:
+      max_epochs: 126
