@@ -68,3 +68,4 @@ if __name__ == "__main__":
     except Exception as e:
         tg_logger = TelegramLogger()
         tg_logger.send_message(str(e))
+        raise e
